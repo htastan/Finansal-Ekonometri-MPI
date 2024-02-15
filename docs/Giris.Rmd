@@ -1,0 +1,147 @@
+---
+title: "Giriş"
+author: "Prof. Dr. Hüseyin Taştan"
+subtitle: Finansal Ekonometri 
+institute: Yıldız Teknik Üniversitesi - MP İktisat TYL Programı
+#date: " "
+output: 
+  xaringan::moon_reader:
+    css: [default, metropolis]
+    lib_dir: libs
+    nature:
+      beforeInit: "macros.js"
+      highlightStyle: github
+      highlightLines: yes
+      countIncrementalSlides: no
+      ratio: '16:9'
+  html_document:
+    df_print: paged
+  pdf_document: default
+
+
+---
+class: my-medium-font
+
+<style type="text/css">
+.remark-slide-content {
+    font-size: 25px;
+    padding: 1em 4em 1em 4em;
+}
+.my-large-font {
+  font-size: 40px;
+}
+.my-small-font {
+  font-size: 20px;
+}
+.my-medium-font {
+  font-size: 30px;
+}
+</style>
+
+
+
+
+# Plan
+
+- [Dersin tanıtımı](#derst) 
+
+- [Ekonometri vs. Finansal Ekonometri](#ekonometri)
+
+- [Veri türleri](#datatypes)
+
+- [Ekonometri yazılımları](#software)
+
+
+---
+name: derst 
+
+# Dersin tanıtımı 
+
+- Bu derste finans ve iktisat alanında yaygın olarak kullanılan ekonometrik yöntemlerin öğretilmesi amaçlanmaktadır. 
+
+- Dersin konuları arasında finansal değişkenlerin özetlenmesi ve betimlenmesi, regresyon analizi, öngörü modelleri, ARIMA, VAR, birim kök testleri, volatilite modelleri, ARCH, GARCH ve bu modellerin uzantıları yer almaktadır. 
+
+- Bu dersi başarıyla tamamlayan öğrenci finansal zaman serilerinin ekonometrik analiz yöntemlerine ilişkin bilgi ve beceriye sahip olacaktır. 
+
+- Öğrenciler bu derste öğrendikleri yöntemleri kendi araştırmalarında ve projelerinde kullanabilme becerisini edinecektir. Finansal zaman serileri analizinde kullanılan en az bir bilgisayar yazılımı hakkında işlevsel bilgi sahibi olacaktır. 
+
+- Uygulamalar R programında yapılacaktır. 
+
+
+---
+# Ders programı  
+
+- Haftalık ders programı için bkz. ders izlencesi
+
+---
+name: ekonometri 
+
+# Ekonometri ve Finansal Ekonometri
+
+- Ekonometri kelime anlamıyla ekonomik ölçme demektir. Ancak, ekonometrinin ugraşı alanı çok daha geniştir.
+
+> “Ekonometri, ekonomik olayların ekonomik teori, matematik ve istatistiksel çıkarım (inference) araçlarıyla analiz edildiği bir sosyal bilimdir.” (Goldberger, A.S., 1964).
+
+- Finansal ekonometri, adından anlaşılacağı gibi, finansal verilerin analizi ile uğraşır. Özellikle finans teorilerinin test edilmesi başlıca araştırma konularından biridir. 
+
+Örnekler: Finans piyasalarının etkinliğinin sınanması (etkin piyasa hipotezi); finansal varlık getirilerinin değişkenliğinin (volatilite) ölçülmesi ve öngörülmesi; döviz kurları ve fiyatlar arasındaki ilişkinin modellenmesi; finansal değişkenlerinin gelecek değerlerinin öngörülmesi
+
+---
+# Ekonometrinin uğraşı alanları 
+
+- Ekonomik ilişkilerin tahmini için istatistiksel yöntemler geliştirmek,
+
+- Ekonomik teori ve hipotezleri test etmek,
+
+- Ekonomi politikalarını değerlendirmek ve uygulamak,
+
+- Tahmin-Öngörü- (forecasting) yapmak,
+
+- Deneysel-olmayan (nonexperimental) ya da gözlemsel (observational) veri (data) toplamak ve analiz etmek.
+		
+---
+name: datatypes
+
+# Veri Türleri
+
+- **Kesitler-arası veri (cross-sectional data)**: Kişiler, tüketiciler, hane halkları, firmalar, bölgeler, ülkeler gibi mikro birimlere ait zamanın belli bir noktasında gözlemlenen verileri kapsar.
+
+- **Zaman serisi verileri (time series data)**: Birbirine eşit zaman aralıklarında (günlük, aylık, haftalık, yıllık vb.) gözlemlenen verileri kapsar. GDP, enflasyon oranı, faiz haddi, borsa indeksi gibi birçok makroekonomik ve finansal değişkenler bu gruba girer.
+
+- **Birleştirilmiş Kesitler-arası veri (pooled cross-section)**: Farklı zamanlarda gözlemlenerek birleştirilmiş kesitler-arası verileri kapsar. Örneğin hanehalkı işgücü anketleri
+
+- **Panel Veri (panel data, longitudinal data)**: Farklı zamanlarda aynı mikro birimlerin gözlemlenmesiyle oluşturulmuş verileri kapsar.
+
+---
+# Büyük Veri, Makine Öğrenmesi ve Ekonometri
+
+-  **Büyük Veri (Big Data)**: özellikle online işlemler sonucunda ortaya çıkan çok büyük boyutlu veri setleri (sosyal medya, kredi kartı işlemleri, online alışveriş vs.)
+    
+-  **Veri Bilimi (Data Science)**: bilgisayar bilimi, istatistik, veri madenciliği ve makine öğrenmesi alanlarını içeren yeni ortaya çıkan disiplinlerarası bir çalışma alanı 
+    
+-  **Veri madenciliği**: büyük veri setlerinin içindeki gizli bilgi ve örüntülerin ortaya çıkarılmasıyla uğraşır
+    
+-  **Makine Öğrenmesi (Machine Learning)**: özellikle gözetimli (supervised) makine öğrenmesi algoritmaları kestirim (öngörü) problemleriyle ilgilenir. Örnek: ev özelliklerinden hareketle ev fiyatlarının kestirilmesi, banka müşterilerinin özelliklerinden hareketle borç geri ödeme kapasitesinin değerlendirilmesi (kredi başvurusunun red veya kabul edilmesi)
+    
+-  **Ekonometri**: nedensel ekonomik ilişkilerin tahmini ile uğraşır.
+
+---
+name: software 
+
+# Ekonometri Yazılımları 
+
+- Uygulamada kullanabileceğimiz çok sayıda yazılım mevcuttur.
+
+- Bunlardan bir kısmı ticari programlardır: Stata, Eviews, SPSS, SAS, RATS, Gauss, yıllık olarak lisans satın almayı gerektirir. Genellikle pahalıdır.
+
+- Açık kaynaklı yazılımlar: R, Python, Gretl, vd. 
+
+- Gretl: [http://gretl.sourceforge.net/index.html](http://gretl.sourceforge.net/index.html) [http://gretl.sourceforge.net/win32/](http://gretl.sourceforge.net/win32/)
+
+- R: [https://www.r-project.org/](https://www.r-project.org/)
+
+- RStudio: [https://www.rstudio.com/products/RStudio/](https://www.rstudio.com/products/RStudio/)
+
+- R'a kısa ve hızlı bir giriş için ders notlarını inceleyiniz. 
+
+

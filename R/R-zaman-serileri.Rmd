@@ -1,0 +1,483 @@
+---
+title: "R ile Zaman Serileri Analizine Giriş"
+subtitle: Finansal Ekonometri (MPİ-TYL YTÜ İktisat)
+author: 
+  name: "Prof. Dr. Hüseyin Taştan"
+  affiliation: "Yıldız Technical University"
+# date: "`r format(Sys.time(), '%d %B %Y')`"
+date: 2021 Spring
+output: 
+  html_document:
+    number_sections: true
+    theme: lumen
+    highlight: haddock 
+    # code_folding: show
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+    keep_md: true
+---
+<style type="text/css"> 
+body{
+  background-color: #FAFAFA;
+  font-size: 18px;
+  line-height: 1.8;
+}
+code.r{
+  font-size: 12pt;
+}
+</style>
+<br>
+
+```{r setup, include=FALSE}
+# knitr::opts_chunk$set(echo = TRUE, results = 'asis', fig.show = 'asis')
+knitr::opts_chunk$set(echo = TRUE)
+``` 
+
+# R'da Zaman serilerinin temsili
+
+Bir zaman serisi kronolojik olarak sıralanmış (zaman ile endekslenmiş) ölçüm veya gözlemlerden oluşur. Çoğu zaman serisi birbirine eşit uzaklıktaki zaman dilimlerinde ölçülür (saatlik, günlük, haftalık, aylık, üç aylık, yıllık gibi). Ancak düzensiz ölçümlü zaman serileri ya da kayıp gözlemli zaman serileri de olabilir.  
+
+Zaman serileri tipik olarak finans ve makroekonomik analizlerde karşımıza çıkar. Bu alandaki önemli konulardan bir öngörüdür (forecasting). Öngörü problemlerinde geçmiş gözlem veya ölçümlerden hareketle geleceğin en az hata payıyla kestirilmesi amaçlanır. Örneğin merkez bankaları rutin olarak gelecekteki enflasyonu tahmin etmeye çalışır. 
+
+Zaman serileri ile ekonometrik analiz yapabilmek için kullandığımız yazılımın bu veri tipini tanıması ve anlaması gerekir. Her ekonometrik yazılım için verilerin zaman serisi olduğu ve sıklığının ne olduğunun (zaman değişkeninin ne olduğunun) tanıtılması gerekir. Açık kaynaklı bir yazılım olan `R`'da zaman serilerinin tanıtılması ve işlemlerin yapılması için çok çeşitli yaklaşımlar geliştirilmiştir. Aşağıda en popüler paket ve yaklaşımlar gözden geçirilmiştir. Daha fazla bilgi için bkz. [CRAN Task View: Time Series Analysis](https://cran.r-project.org/web/views/TimeSeries.html)
+
+# `ts` object
+
+`ts` base `R` ile birlikte gelen `stats` paketinin bir parçasıdır. `ts` nesnesi ile eşit aralıklı (aylık, üç aylık, yıllık gibi) zaman serilerinin kolayca temsili mümkündür. Örneğin
+```{r}
+set.seed(1)
+x <- rnorm(10)
+
+x
+class(x)
+```
+
+Rassal değişken `x`'in sınıfı (class) sayısaldır (numeric). Bu değişkeni 2010-2019 yılları ararasında gözlemlenmiş yıllık bir zaman serisi nesnesine (ts) dönüştürmek istersek: 
+
+```{r}
+ts_yillik <- ts(x, start = 2010, frequency = 1)
+ts_yillik
+```
+
+Burada `ts_yillik` nesnesi nümerik değerler alır ancak ek olarak zaman serisi özellikleri de taşır (attributes). `ts` nesnesinin başlangıcı, bitişi, ve frekansı (yıllık için 1) belirtilmiştir.  
+
+```{r}
+class(ts_yillik)
+attributes(ts_yillik)
+```
+`ts_yillik` vektörünün sınfı `ts`'dir. `tsp` sırasıyla başlangıç, bitiş tarihini ve frekansı gösterir. 
+
+Base `R`'ın `plot` fonksiyonu nesnenin sınıfını otomatik olarak algılar ve grafiği uygun olarak çizer:  
+```{r}
+plot(ts_yillik)
+```
+
+`plot` fonksiyonunu nümerik `x` vektörü ile kullanırsak: 
+```{r}
+plot(x)
+```
+
+
+Elimizde birden fazla zaman serisi varsa bunları ts özellikleri olan nümerik bir matris olarak tanımlayabiliriz. Örneğin aşağıdaki yapay olarak türetilmiş verileri düşünelim: 
+```{r}
+set.seed(22)
+n <- 120
+x1 <- rnorm(n)
+x2 <- rnorm(n)
+t <- 1:n
+y <- 10 + 0.1*t + 2*x1 - 3*x2 + rnorm(n)
+df1 <- data.frame(y, x1, x2)
+head(df1)
+```
+
+Bu verilerin aylık olduğunu ve 2010m1 döneminden başlağını ve 10 yılı kapsadığın varsayalım: 
+```{r}
+ts_aylik <- ts(df1, start = c(2010, 1), end = c(2019, 12), frequency = 12)
+head(ts_aylik)
+```
+```{r}
+attributes(ts_aylik)
+```
+
+
+```{r}
+class(ts_aylik)
+```
+
+```{r}
+plot(ts_aylik)
+```
+
+
+
+Benzer şekilde üç aylık bir `ts` nesnesi aşağıdaki gibi yaratılabilir:  
+```{r}
+ts_quarterly <- ts(runif(8), start = c(2018, 1), frequency = 4)
+ts_quarterly
+```
+
+`ts` nesnelerinin bir altkümesini oluşturmak istersek `window()` fonksiyonunu kullanabiliriz. Örneğin, `ts_aylik` veri setinden hareketle 2018m1'den son tarihe kadar olan kısmı alalım:  
+```{r}
+ts_monthly_subset <- window(ts_aylik, start=c(2018,1))
+ts_monthly_subset
+```
+
+
+
+# `zoo` object
+
+`ts` sınıfının zayıf taraflarından biri zaman değişkeninin sadece nümerik olmasıdır. Aylık, üç aylık, yıllık gibi zaman serileri için bu önemli bir sorun oluşturmaz. Ancak düzensiz ölçümlü, kayıp gözlemli, saatlik, günlük gibi zaman serilerinin temsilinde problemler ortaya çıkabilir. Elimizdeki gözlemlerde kayıp değerler varsa sadece başlangıç ve bitişi tanımlayarak zaman serisini oluşturamayız.  
+
+`ts` sınıfına alternatif olarak geliştirilmiş çok sayıda paket mevcuttur. Bunlardan biri `zoo` paketi ve sınıfıdır. [Zeileis and Grothendieck (2005)](http://dx.doi.org/10.18637/jss.v014.i06). CRAN sayfası: [zoo: S3 Infrastructure for Regular and Irregular Time Series (Z's Ordered Observations)](https://cran.r-project.org/web/packages/zoo/index.html). 
+
+```{r}
+library(zoo)
+n <- 10
+dates <- seq(as.Date("2020-12-01"), length = n, by = "days")
+dates
+x_zoo <- zoo(x = rnorm(n), order.by = dates)
+x_zoo
+```
+
+```{r}
+class(x_zoo)
+```
+
+```{r}
+plot(x_zoo)
+```
+
+
+Bir `ts` nesnesini `zoo` nesnesine dönüştürmek için `as.zoo()` fonksiyonu kullanılabilir. Tersi için `as.ts()` fonksiyonu kullanılabilir. 
+
+```{r}
+zoo_monthly <- as.zoo(ts_aylik)
+plot(zoo_monthly)
+```
+
+Örnek: `AirPassengers` ve  `zoo` paketi: 
+```{r}
+plot(autoplot.zoo(as.zoo(AirPassengers)))
+```
+
+
+# `xts` object
+
+`xts` (Extensible Time Series) `zoo` nesnesinin özelliklerini genişletir. `xts` nesnesi ile POSIXct ve Date sınıflarını zaman değişkeni olarak kullanmak mümkündür. Daha fazla bilgi için CRAN sayfası: [xts: eXtensible Time Series](https://cran.r-project.org/web/packages/xts/index.html). 
+
+
+```{r}
+library(xts)
+xts_data1 <- xts(x = runif(5), order.by=Sys.Date()-1:5) 
+colnames(xts_data1) <- "var1"
+xts_data1
+```
+
+```{r}
+# sunspots data
+data("sunspots")
+xts_sunspots <- as.xts(sunspots)
+head(xts_sunspots)
+```
+
+```{r}
+class(xts_sunspots)
+periodicity(xts_sunspots)
+```
+
+```{r}
+plot(xts_sunspots)
+```
+
+Örnek: günlük veriler 
+```{r}
+data("sample_matrix")
+xts_daily <- as.xts(sample_matrix)
+head(xts_daily)
+```
+
+```{r}
+plot(xts_daily)
+```
+
+
+
+# `tsibble` object
+
+Yakın tarihte geliştirilmiş başka bir alternatif `tsibble` nesnesidir. Bu nesne `tidyverts` paketler topluluğunun bir parçasıdır ve R. Hyndman tarafından geliştirilmiştir, bkz. [tidyverts](https://tidyverts.org/)
+
+`tidyverts` dört paketten oluşur: `tsibble`, `fable`, `feasts`, ve `tsibbledata.` 
+Bu paketler `tidyverse` paketleri ile uyumlu çalışacak şekilde tasarlanmıştır.[tidyverse](https://www.tidyverse.org/). 
+
+`tsibble` nesnesine ilişkin daha fazla bilgi için bkz. [tsibble: Tidy Temporal Data Frames and Tools](https://cran.r-project.org/web/packages/tsibble/index.html). 
+
+Ayrıca bkz. [Hyndman, R.J., & Athanasopoulos, G. (2019) Forecasting: principles and practice, 3rd edition, OTexts: Melbourne, Australia.](https://otexts.com/fpp3/)  
+
+
+Örnek: `tsibble` nesnesinin oluşturulması 
+```{r tsibbleex1, warning=FALSE}
+library(tsibble)
+tsdata1 <- tsibble(year = 2017:2019, 
+                   var1 = c(100, 90, 105), 
+                   index = year)
+tsdata1
+```
+
+Bir `tsibble` nesnesinin zamanı tanımlayan bir index değişkeni olmak zorundadır. Opsiyonel olarak başka anahtar (key) değişkenler de tanımlanabilir. Bu anahtar değişkenler panel veri setlerinin temsilinde kolaylık sağlayabilir. Yukarıdaki örnekte zaman indeksi year değişkenidir. 
+
+
+Örnek: Kişi başına GDP için iki-yıllık gözlemler, il düzeyinde veriler, iller: Istanbul, Ankara ve Izmir. Bu örnekte zaman indeksi `year` anahtar (key) değişkeni ise `province`'dir. Burada key değişkeni tanımlanmak zorunda çünkü belirli bir yılda çoklu gözlemler var (panel veri, longitudinal data).  
+```{r tsibbleex2}
+tsdata2 <- tsibble(year = c(rep(2017,3), rep(2018,3)), 
+                   province = rep(c("Istanbul", "Ankara", "Izmir"),2), 
+                   GDPpc = c(65195,51922,45102,76769,60249,54305), 
+                   index = year, 
+                   key = province
+                   )
+tsdata2
+```
+
+```{r}
+index(tsdata2)
+```
+
+```{r}
+key(tsdata2)
+```
+
+Örnek: `tsibbledata` paketinde yer alan bir ülkeler-arası veri seti
+```{r}
+library(tsibbledata)
+data("global_economy")
+global_economy
+```
+
+Buradaki `global_economy` veri setinde time index `Year` ve key değişkeni `Country`'dir. 
+
+Yaygın kullanılan zaman formatları ve ilgili fonksiyonlar aşağıdaki tabloda özetlenmektedir. (Kaynak: [Hyndman and Athanasopoulos (2019) Forecasting: principles and practice, 3rd edition](https://otexts.com/fpp3/))
+
+| **Interval** | **Class**                 |**Function**               |
+|--------------|---------------------------|---------------------------|
+| Annual       | `integer`/`double`        | `start:end`               |
+| Quarterly    | `yearquarter`             | `yearquarter()`           |
+| Monthly      | `yearmonth`               | `yearmonth()`             |
+| Weekly       | `yearweek`                | `yearweek()`              |
+| Daily        | `Date`/`difftime`         | `as_date()`, `ymd()`      |
+| Subdaily     | `POSIXt`/`difftime`/`hms` | `as_datetime()`           |
+|                                                                      |
+
+
+
+Mevcut bir zaman serisi nesnesi `tsibble` nesnesine dönüştürülebilir:  
+```{r message=FALSE, warning=FALSE}
+library(tsibble)
+library(tidyverse)
+library(lubridate)
+library(xts)
+library(fpp3)
+# use built-in daily data on closing prices from xts package
+data("sample_matrix")
+head(sample_matrix)
+```
+
+
+```{r}
+# convert sample_matrix into tibble and create a date variable
+df1 <- tibble(date = rownames(sample_matrix), 
+              close = sample_matrix[,4]
+              )
+df1 <- df1 %>% 
+  mutate(date = lubridate::ymd(date))
+df1
+```
+
+
+```{r} 
+tsibble_daily <- as_tsibble(df1, index = date)
+tsibble_daily
+```
+
+Buradan hareketle ay içindeki ortalama kapanış değerlerini hesaplayarak bir aylık veri seti oluşturabiliriz. Bunun için önce yeni bir değişken oluşturalım ve buna `year_month` ismini verelim, `tsibble::yearmonth()`.  
+```{r}
+tsibble_monthly <- tsibble_daily %>% 
+  mutate(year_month = yearmonth(date))
+tsibble_monthly
+```
+
+Yeni veri seti `tsibble_monthly`'nin time indeksi `date` değişkenidir. Gruplama fonksiyonu `index_by()` ile özet istatistikleri hasaplayabiliriz. Bunun kullanımı `dplyr` paketindeki `group_by()` fonksiyonu ile aynıdır.  
+
+```{r}
+tsibble_monthly2 <- tsibble_monthly %>% 
+  index_by(year_month) %>% 
+  summarize(close_avr = mean(close), 
+            count = n())
+tsibble_monthly2
+```
+
+Günlük verilerin grafiği: 
+```{r}
+tsibble_daily %>% autoplot(close)
+```
+```{r}
+tsibble_monthly2 %>% autoplot(close_avr)
+```
+
+
+# `quantmod` ile finansal verilerin indirilmesi 
+
+```{r}
+# install.packages("quantmod")
+library(quantmod)
+```
+
+Apple hisse senedinin günlük verilerini 01-01-2018-31-08-2021 arasına kapsayacak şekilde indirelim: 
+```{r}
+# yil-ay-gün
+getSymbols("AAPL", from='2018-01-01',to='2021-08-31')
+```
+
+`AAPL` bir `xts` nesnesi olarak tanımlıdır. 
+```{r}
+# APPLE kapanış değerleri 
+plot(AAPL$AAPL.Close)
+```
+
+`quantmod:ChartSeries()` fonksiyonu ile görselleştirme: 
+```{r}
+chartSeries(AAPL,
+            type="line",
+            theme=chartTheme('white'))
+```
+
+Sadece 2020 yılı: 
+```{r}
+chartSeries(AAPL,
+            type="line",
+            subset='2020',
+            theme=chartTheme('white'))
+```
+
+```{r}
+chartSeries(AAPL,
+            type="bar", 
+            subset="2021",
+            theme=chartTheme('white'))
+```
+
+
+Candle stick plot: 
+```{r}
+chartSeries(AAPL,
+            type="candlesticks", 
+            subset="2021-08",
+            theme=chartTheme('white'))
+```
+
+### Hisse senedi getiri oranları 
+
+
+```{r}
+# GOOGLE hissesinin getiri oranı
+library(quantmod)
+getSymbols("GOOG")  
+google_getiri <- diff(log(GOOG$GOOG.Adjusted)) # log getiri  oranı
+chartSeries(google_getiri, theme="white")
+```
+
+
+## Teknik indikatörler
+
+`quantmod` paketiyle birlikte gelen `TTR` paketi teknik indikatörlerin kolayca hesaplanması için kullanabileceğimiz çok sayıda fonksiyon içerir. Bu paket ayrı olarak da yüklenebilir ve kullanılabilir: 
+```{r}
+# install.packages("TTR")
+library(TTR)
+```
+
+### Simple Moving Average (SMA)
+
+$$SMA_t(n) = \frac{P_t+\ldots+P_{t-n+1}}{n}
+$$
+
+```{r}
+# 30 günlük SMA
+sma <- TTR::SMA(Cl(AAPL), n = 30)
+tail(sma, n = 6)
+```
+
+```{r}
+# 200 günlük SMA
+sma <- TTR::SMA(Cl(AAPL), n = 20)
+tail(sma, n = 6)
+```
+
+Grafik: 
+```{r}
+chartSeries(AAPL, 
+            theme=chartTheme('white')
+            )
+addSMA(n=30,on=1,col = "blue")
+addSMA(n=200,on=1,col = "red")
+```
+
+
+### Exponential moving average (EMA)
+$$
+\begin{align*}
+&ema_t(P,n)\\
+&= \beta P_t + \beta (1-\beta)P_{t-1}+\beta(1-\beta )^{2}P_{t-2}+ \cdots\\
+&=\beta P_t + (1-\beta) ema_{t-1}(P,n)
+\end{align*}
+$$
+$$\beta=\frac{2}{n+1}
+$$
+
+```{r}
+ema <-EMA(Cl(AAPL), n=20)
+tail(ema, n=5)
+```
+
+```{r}
+chartSeries(AAPL, 
+            theme=chartTheme('white'))
+addEMA(n=30,on=1,col = "blue")
+addEMA(n=200,on=1,col = "red")
+```
+
+Diğer indikatörler Bollinger bands (`TTR::BBands()`), momentum (`TTR::momentum()`), rate of change (`TTR::ROC()`), moving average convergence-divergence (`TTR::MACD()`, relative strength index (`TTR:RSI()`)
+
+### Chicago Board Options Exchange VIX Volatility Index 
+
+```{r}
+library(quantmod)
+getSymbols("^VIX")
+chartSeries(VIX, theme=chartTheme('white'))
+```
+
+
+### İstanbul BIST 100 Indeksi
+
+```{r}
+# yahoo finance sitesinde veriler eksik
+# TCMB evds ile indirilebilir
+library(quantmod)
+getSymbols("^XU100") 
+chartSeries(XU100, theme=chartTheme('white'))
+```
+
+
+
+
+<!-- # `tidyquant` -->
+
+<!-- Finansal verilerin indirilmesi ve analizi için kullanabileceğimiz başka bir paket `{tidyquant}` paketidir. Bu paket `{tidyverse}` paketleri ile uyumlu çalışacak şekilde geliştirilmiştir. Daha fazla detay için bkz. [https://business-science.github.io/tidyquant/](https://business-science.github.io/tidyquant/) -->
+<!-- ```{r message=FALSE, warning=FALSE} -->
+<!-- # install.packages("tidyquant") -->
+<!-- library(tidyquant) -->
+<!-- ``` -->
+
+
+
+
+<br>
+<div class="tocify-extend-page" data-unique="tocify-extend-page" style="height: 0;"></div>

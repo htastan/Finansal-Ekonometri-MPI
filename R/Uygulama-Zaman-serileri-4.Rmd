@@ -1,0 +1,284 @@
+---
+title: 'Uygulama - Zaman Serileriyle Regresyon Analizi'
+author:
+  name: Prof. Dr. Hüseyin Taştan
+  affiliation: Yıldız Teknik Üniversitesi
+date: ""
+output:
+  html_document:
+    number_sections: yes
+    theme: readable
+    highlight: haddock
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+    keep_md: no
+  word_document:
+    toc: yes
+    toc_depth: '3'
+subtitle: Finansal Ekonometri (MPİ-TYL)
+---
+<style type="text/css"> 
+body{
+  font-size: 12pt;
+}
+code.r{
+  font-size: 12pt;
+}
+</style>
+
+```{r setup, include=FALSE}
+# knitr::opts_chunk$set(echo = TRUE, results = 'asis', fig.show = 'asis', fig.width = 3.5,                         fig.height = 3)
+knitr::opts_chunk$set(echo = TRUE)
+``` 
+
+# Üstel trend 
+
+```{r message=FALSE, warning=FALSE}
+# load packages
+library(wooldridge)
+library(dynlm)
+library(lmtest)
+library(car)
+library(forecast)
+library(tidyverse)
+```
+```{r}
+load("Data/gsyih_sa_endeks.RData")
+tail(gsyih_sa_endeks)
+```
+
+```{r} 
+# ts objeleri oluştur
+# GSYİH 
+gsyih_sa_ts <- ts(gsyih_sa_endeks$gsyih_sa, start = c(1998,1), frequency = 4)  
+# zaman serisi grafiği
+autoplot(gsyih_sa_ts)+ 
+  xlab("") + ylab("") +
+  ggtitle("GSYİH: 1998ç1-2020.ç3") +
+  theme(legend.title = element_blank()) +
+  theme(legend.position = "right")
+```
+
+
+```{r}
+# log trend
+# forecast::tslm() function
+res1 <- tslm(log(gsyih_sa_ts) ~ trend)
+summary(res1)
+```
+
+$$\widehat{\log(GSYIH)} = 4.13+0.012~trend$$
+
+GSYİH serisi her çeyrekte ortalama %1.2 büyümektedir (yıllık olarak yaklaşık %4.8). 
+
+```{r}
+autoplot(forecast(res1, h=8)) + 
+  ggtitle("Trend öngörüleri")
+```
+
+
+
+
+# Birim kök testleri (durağanlık)
+
+Değişkenlerin birinci farkını almalı mıyız? Durağan olmayan bir zaman serisini 
+(random walk ya da random walk with drift gibi) durağanlaştırmanın tek yolu birinci farkını almaktır. 
+
+Literatürde çok sayıda birim kök testi geliştirilmiştir. Yaygın olarak kullanılan ADF testi (Augmented Dickey-Fuller) sıradan en küçük kareler regresyonlarına dayanır. En basit haliyle $y_t$ serisinin ADF test istatistiği aşağıdaki regresyonda 
+$$y_t = \phi y_{t-1}+\varepsilon_t$$
+
+gecikme katsayısının $\phi=1$ olup olmadığına ilişkin t oranıdır. Ancak boş hipotez altında bu t oranı t dağılımını takip etmez. Standart dağılımlar dışında bir dağılıma sahiptir ve kritik değerler ancak simülasyonla bulunabilir. Seride düzenli artış (trend) varsa drift (sabit) terimi eklenebilir. Ayrıca hata teriminin white noise olması (otokorelasyonsuz) gerekir. Otokorelasyonu yok etmek için bağımlı değişkenin farkının uygun gecikmeleri eklenebilir.  
+
+ADF testinin boş hipotezi: 
+$$H_0:~~seri~birim~kök ~içerir (durağan~~ değildir)$$
+
+P değeri ile karar verilebilir. Yeterince büyük bir p değeri (örneğin 0.05'den büyükse) için boş hipotez kabul edilir, yani seri durağan değildir. Bu durumda serinin birinci farkını almak gerekir. Birinci farkı aldıktan sonra tekrar ADF testi hesaplanır. Eğer birinci farkın ADF p değeri yeterince küçükse birinci fark durağandır. Böylece birinci fark almanın seriyi durağanlaştırmak için yeterli olduğu sonucuna ulaşılır. 
+
+Başka bir durağanlık testi KPSS testidir. Bu testin boş hipotezi serinin durağan olduğunu söyler: 
+$$H_0:~~seri~durağandır$$
+
+KPSS test istatistiğinin p değeri ile karar verilebilir. Yeterince büyük bir p değeri (örneğin 0.05'den büyükse) boş hipotez kabul edilir, yani seri durağandır. 
+
+
+```{r}
+library(urca)
+library(tsibble)
+library(tsibbledata)
+google <- gafa_stock %>% filter(Symbol == "GOOG")
+google_ts <- ts(google$Close, frequency = 1)
+google500 <- window(google_ts, end = 500)
+autoplot(google500)
+```
+
+
+```{r}
+# ADF testi
+adf1 <- ur.df(log(google500) ,    
+              type = c("drift"), # drift (sabit) dahil
+              lags=6,            # max gecikme sayısı
+              selectlags="AIC")  # optimal gecikme AIC ile seçilsin
+summary(adf1)
+```
+
+ADF test istatistiği $-0.997$'dir. P değeri: 
+```{r}
+punitroot(-0.997, trend = "c", statistic = "t")
+```
+
+P değeri oldukça büyüktür, boş hipotez reddedilemez. Google hisse serisi durağan değildir. 
+
+Birinci farkı alalım ve testi tekrarlayalım: 
+```{r} 
+# Birinci farkın ADF testi
+adf2 <- ur.df(diff(log(google500)) ,  # logaritmik birinci fark  
+              type = c("drift"), # drift (sabit) dahil
+              lags=6,            # max gecikme sayısı
+              selectlags="AIC")  # optimal gecikme AIC ile seçilsin
+summary(adf2)
+```
+
+ADF test istatistiği $-16.066$, ve  p değeri: 
+```{r}
+punitroot(-16.066, trend = "c", statistic = "t")
+```
+
+P değeri oldukça küçüktür, $H_0$ reddedilir. Yani birinci fark durağandır. Böylece ADF testine göre bu değişkenin birinci farkının durağanlaştırmak için yeterli olduğunu göstermiş olduk. 
+
+Şimdi KPSS testini hesaplayalım. x
+```{r}
+# KPSS testi, urca paketi
+kpss1 <- ur.kpss(log(google500))
+summary(kpss1)
+```
+
+KPSS test istatistiği 2.9062 kritik değerlerden büyüktür. Sonuç olarak boş hipotez reddedilir. Boş hipotez serinin durağan olduğunu söylüyordu. Öyleyse seri durağan değildir. KPSS testi `feasts::unitroot_kpss()` fonksiyonu ile de hesaplanabilir: 
+```{r}
+feasts::unitroot_kpss(log(google500))
+```
+
+P değeri 0.01 olduğuna göre $H_0$ reddedilir, seri durağan değildir. 
+
+Birinci fark ile tekrarlayalım: 
+```{r}
+feasts::unitroot_kpss(diff(log(google500)))
+```
+
+P değeri 0.05'den büyüktür. Boş hipotez kabul edilir, birinci fark durağandır. 
+
+Bir değişkenin durağanlaşması için kaç farkının alınması gerektiğini otomatik olarak `feasts::unitroot_ndiffs()` fonksiyonu ile de hesaplayabiliriz. Bu fonksiyonu KPSS testini kullanmaktadır. Google serisine uygularsak: 
+```{r}
+feasts::unitroot_ndiffs(log(google500))
+```
+
+Log google değişkeninin birinci farkının alınması seriyi durağanlaştırmaktadır. Birinci fark için: 
+```{r}
+feasts::unitroot_ndiffs(diff(log(google500)))
+```
+
+Tekrar fark almaya gerek yoktur. 
+
+
+
+# Eşbütünleşme 
+
+## Örnek: 3-aylık ve 6-aylık hazine bonosu faiz oranları eşbütünleşik mi? 
+
+```{r}
+library(wooldridge)
+r6 <- ts(intqrt$r6, start = 1950, frequency = 4)
+r3 <- ts(intqrt$r3, start = 1950, frequency = 4)
+spr <- r6-r3
+autoplot(cbind(r6, r3))  
+```
+
+```{r}
+intreg1 <- dynlm(r6 ~ r3)
+summary(intreg1)
+```
+
+Tahmin sonuçları: 
+$$\widehat{r6}_t = 0.135 + 1.03 r3_t$$
+
+$r3_t$'nin katsayı tahmini bire çok yakındır; beklenndiği gibi bu iki değişken arasında birebir ilişki vardır. 
+
+Kalıntıların birim kök içermediğinin testi (Engle-Granger testi): 
+```{r}
+# Residuals from the static regression
+uhat <- residuals(intreg1)
+autoplot(uhat)
+```
+
+
+```{r}
+library(urca)
+summary( ur.df(uhat , type = c("drift"), selectlags="AIC"))
+```
+
+
+$$\begin{aligned}\widehat{\Delta \hat{u}}_t =& -0.004 -0.632 \hat{u}_{t-1} -0.146 \Delta \hat{u}_{t-1} \\&~~~~(0.023)~~~~(0.112) ~~~~~~~~~~(0.091)
+\end{aligned}$$
+
+$$EG = \frac{-0.632}{0.112}=-5.64$$
+
+ADF kritik değerleri kullanılmamalıdır. EG kritik değerleri farklıdır. Tablo 18.4'de verilen (bkz. sunum notları) %1 kritik değeri -3.90'dır. EG test değeri bu değerden daha küçük olduğu için $H_0$ reddedilir. Bu iki değişken eşbütünleşiktir.  
+
+
+## Örnek: Antalya ve İstanbul'da domates fiyatları 
+
+```{r}
+load("../R/Data/tomatoprices.RData")
+antalya <- ts(tomatoprices$antalya, start = 2011, frequency = 12)
+istanbul <- ts(tomatoprices$istanbul, start = 2011, frequency = 12)
+# plot of the series
+library(forecast)
+library(ggplot2)
+autoplot(cbind(antalya, istanbul)) +
+  theme_minimal() + xlab("") + ylab("Tomato prices")  
+```
+
+Her iki fiyat serisinin I(1) olduğunu varsayalım (birim kök testleri ile karar verilebilir). Logaritmik fiyat serileri ile statik regresyon: 
+```{r}
+res1 <- dynlm(log(istanbul) ~ trend(istanbul) + log(antalya))
+summary(res1)
+```
+Denklem formunda: 
+$$\widehat{\log(istanbul)}_t = 0.304 + 0.787 \log(antalya)_t + 0.070~ t$$ 
+
+Bu sonuçlara göre Istanbul'daki fiyatların Antalya üretici fiyatlarına göre esnekliği yaklaşık 0.79'dur. Antalya'da fiyatlar %10 artarsa İstanbul'da fiyatlar yaklaşık %7.87 artar. Bu yorum sadece eşbütünleşme altında geçerlidir. Eğer fiyatlar eşbütünleşik değilse yukarıdaki regresyon kurmaca regresyondur ve sonuçlar geçersizdir. 
+
+
+Kalıntıların grafiği ve EG testi: 
+```{r}
+uhat <- residuals(res1)
+autoplot(uhat) + xlab("") + ylab("Residuals (uhat)")+theme_minimal()
+```
+
+```{r}
+summary( ur.df(uhat , type = c("drift"), selectlags="AIC"))
+```
+
+EG eşbütünleşme test istatistiği -5.75 olarak hesaplandı. Bu EG kritik değerinden (trend dahil) daha küçüktür; öyleyse eşbütünleşmenin olmadığını söyleyen boş hipotez reddedilir. Antalya ve İstanbul domates fiyatları eşbütünleşiktir. 
+
+Hata düzeltme modeli: 
+```{r}
+# an ECM 
+ecm1 <- dynlm(d(log(istanbul)) ~ L(uhat) +   L(d(log(antalya))))
+summary(ecm1)
+```
+
+
+$$\begin{aligned}\widehat{\Delta \log(istanbul)}_t =& 0.006 -0.52 \hat{s}_{t-1} + 0.08 \Delta \log(antalya)_{t-1} \\&(0.020)~~(.138) ~~~~~~(.087)\end{aligned}$$
+
+Burada $\hat{s}_{t-1} = \log(istanbul)_{t-1} -  0.304 - 0.787 \log(antalya)_{t-1} - 0.070 (t-1)$ eşbütünleşme ilişkisinden sapmaları gösterir. 
+
+Hata düzeltme parametresi (ayarlanma hızı parametresi) yaklaşık $-0.52$ olarak hesaplanmıştır ve istatistik bakımından anlamlıdır (t testi anlamlı).  
+
+Eğer İstanbul tüketici fiyatları denge ilişkisinin %1 puan üzerindeyse izleyen ayda fiyatlar yaklaşık olarak 0.52 puan azalacaktır. Denge ilişkisinden sapmanın yaklaşık olarak yarısı bir ay içinde düzeltilecektir.
+
+
+
+
+
+
+<div class="tocify-extend-page" data-unique="tocify-extend-page" style="height: 0;"></div>

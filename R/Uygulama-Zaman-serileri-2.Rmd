@@ -1,0 +1,630 @@
+---
+title: 'Uygulama - Öngörü (Forecasting)'
+author:
+  name: Prof. Dr. Hüseyin Taştan
+  affiliation: Yıldız Teknik Üniversitesi
+date: ""
+output:
+  html_document:
+    number_sections: yes
+    theme: readable
+    highlight: haddock
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+    keep_md: no
+  word_document:
+    toc: yes
+    toc_depth: '3'
+subtitle: Finansal Ekonometri (MPİ-TYL)
+---
+<style type="text/css"> 
+body{
+  background-color: #FAFAFA;
+  font-size: 18px;
+  line-height: 1.8;
+}
+code.r{
+  font-size: 12pt;
+}
+</style>
+
+```{r setup, include=FALSE}
+# knitr::opts_chunk$set(echo = TRUE, results = 'asis', fig.show = 'asis', fig.width = 3.5,                         fig.height = 3)
+knitr::opts_chunk$set(echo = TRUE)
+``` 
+
+# Basit öngörü modelleri 
+
+```{r message=FALSE, warning=FALSE}
+# Sys.getlocale()
+# ayarları TR'ye uyarlamak için:
+Sys.setlocale("LC_ALL", "turkish") # 
+library(tidyverse)
+library(forecast)
+```
+
+## Örnek: İstanbul'da sıcaklıklar
+
+```{r}
+# İstanbul hava durumu verilerini yükleyelim
+load("Data/weather_istanbul.rda")
+# Sıcaklık için bir ts nesnesi oluştur:
+temp_ist <- ts(weather_istanbul$temp, # ts nesnesi oluştur
+               start=c(2000, 1),      # dönem: 2000.1-2014.12
+               frequency = 12)
+tail(temp_ist) # son altı gözlem
+```
+
+1 dönem sonrası için basit ortalama, naif ve mevsimsel naif öngörüleri oluşturalım:
+```{r}
+# h=1 için öngörüler
+meanf(temp_ist, h=1)  # ortalama öngörüsü, öngörü ufku h
+naive(temp_ist, h=1)  # naif öngörü
+snaive(temp_ist, h=1) # mevsimsel naif
+```
+
+`{forecast}` paketinde yer alan `meanf()`, `naive()`, ve `snaive()` fonksiyonları bir dönem sonrası (2015 Ocak) için nokta öngörüsü oluşturdu ve bunun %80 ve %95 güven aralıklarını hesapladı. 
+
+6 aylık öngörüler hesaplamak istersek: 
+```{r}
+# h=6 için öngörüler
+h <- 6
+meanf(temp_ist, h=h)  # ortalama öngörüsü, öngörü ufku h
+naive(temp_ist, h=h)  # naif öngörü
+snaive(temp_ist, h=h) # mevsimsel naif
+```
+
+Naif ve mevsimsel naif öngörüler için öngörü ufku h arttıkça güven aralıkları genişlemektedir (belirsizlik artmaktadır). 
+
+24 aylık öngörüler oluşturalım ve grafiklerini çizelim: 
+```{r}
+# h=24 için basit ortalama öngörüsü
+autoplot(temp_ist) +
+  autolayer(meanf(temp_ist, h=24), PI=FALSE, series="Ortalama") +
+  scale_y_continuous(breaks=seq(0,25,5)) + 
+  theme_bw() +
+  ggtitle("İstanbul'da sıcaklık") +
+  xlab("") + ylab("Derece (Celsius)") +
+  guides(colour=guide_legend(title="Öngörü"))
+```
+
+
+Öngörü güven aralığına göstermek istersek: 
+```{r}
+# h=24 için basit ortalama öngörüsü
+autoplot(temp_ist) +
+  autolayer(meanf(temp_ist, h=24), PI=TRUE, series="Ortalama") +
+  scale_y_continuous(breaks=seq(0,25,5)) + 
+  theme_bw() +
+  ggtitle("İstanbul'da sıcaklık") +
+  xlab("") + ylab("Derece (Celsius)") +
+  guides(colour=guide_legend(title="Öngörü"))
+```
+
+
+```{r}
+# Naif öngörü 
+autoplot(temp_ist) +
+  autolayer(naive(temp_ist, h=24), PI=FALSE, series="Naif") +
+  scale_y_continuous(breaks=seq(0,25,5)) + 
+  theme_bw() +
+  ggtitle("İstanbul'da sıcaklık") +
+  xlab("") + ylab("Derece (Celsius)") +
+  guides(colour=guide_legend(title="Öngörü"))
+```
+
+
+```{r}
+# Mevsimsel Naif öngörü 
+autoplot(temp_ist) +
+  autolayer(snaive(temp_ist, h=24), PI=FALSE, series="Mevsimsel Naif") + 
+  scale_y_continuous(breaks=seq(0,25,5)) + 
+  theme_bw() +
+  ggtitle("İstanbul'da sıcaklık") +
+  xlab("") + ylab("Derece (Celsius)") +
+  guides(colour=guide_legend(title="Öngörü"))
+```
+
+
+```{r}
+# Birlikte 
+autoplot(temp_ist) +
+  autolayer(meanf(temp_ist, h=24), PI=FALSE, series="Ortalama") +
+  autolayer(naive(temp_ist, h=24), PI=FALSE, series="Naif") +
+  autolayer(snaive(temp_ist, h=24), PI=FALSE, series="Mevsimsel naif") +
+  ggtitle("İstanbul'da sıcaklık") +
+  xlab("") + ylab("Derece (Celsius)") +
+  guides(colour=guide_legend(title="Öngörü"))
+```
+
+
+
+## Örnek: Google günlük hisse fiyatları
+
+Bu örnekte `{tsibbledata}` paketinde yer alan `gafa_stock` verilerini kullanacağız. 
+```{r message=FALSE, warning=FALSE}
+# Drift yöntemi 
+# google günlük hisse verileri 
+library(tsibble)
+library(tsibbledata)
+google <- gafa_stock %>% filter(Symbol == "GOOG")
+google_ts <- ts(google$Close, frequency = 1)
+google500 <- window(google_ts, end = 500)
+autoplot(google500)
+```
+
+Bir gün sonrası için drift öngörüsü
+```{r}
+rwf(google500, 1, drift=TRUE)
+```
+
+```{r}
+# drift: zaman içindeki düzenli artış (veya azalış)
+dr <- (google500[500]-google500[1])/499
+drift_term <- google500[1] + seq(0,499,1)*dr
+drift_term <- ts(drift_term)
+df <- cbind(drift_term, google500)
+autoplot(df)
+```
+
+
+```{r}
+# Drift öngörüleri
+# h=50 gün
+autoplot(google500) +  
+  autolayer(drift_term, series = "Drift line") +
+  autolayer(rwf(google500, drift=TRUE, h=50),
+            series="Drift", PI=TRUE) +
+  ggtitle("Google günlük hisse kapanış değerleri") +
+  xlab("Gün") + ylab("Kapanış fiyatı (US$)") +
+  guides(colour=guide_legend(title="Öngörü"))
+```
+
+
+```{r}
+# Drift öngörüleri
+# h=50 gün
+# gerçekleşen değerleri ekle
+google550 <- window(google_ts, start = 501, end = 550)
+
+autoplot(google500) +  
+  autolayer(drift_term, series = "Drift line") +
+  autolayer(rwf(google500, drift=TRUE, h=50),
+            series="Drift", PI=TRUE) +
+  autolayer(google550, series = "Gerçek değerler") +
+  ggtitle("Google günlük hisse kapanış değerleri") +
+  xlab("Gün") + ylab("Kapanış fiyatı (US$)") +
+  guides(colour=guide_legend(title="Öngörü"))
+```
+
+
+
+```{r}
+# diğer öngörüler
+autoplot(google500) + 
+  autolayer(google550, series = "Gerçek değerler") +
+  autolayer(meanf(google500, h=50),
+            series="Ortalama", PI=FALSE) +
+  autolayer(rwf(google500, h=50),
+            series="Naif", PI=FALSE) +
+  autolayer(rwf(google500, drift=TRUE, h=50),
+            series="Drift", PI=FALSE) +
+  ggtitle("Google günlük hisse kapanış değerleri") +
+  xlab("Gün") + ylab("Kapanış fiyatı (US$)") +
+  guides(colour=guide_legend(title="Öngörü"))
+```
+
+
+
+# Dönüştürmeler 
+
+```{r}
+# Box-Cox transformasyonu örnek 
+load("Data/turist.rda")
+turist_ts <- ts(turist$touristnumber, 
+                start = c(1990,1), 
+                frequency = 12)
+```
+
+
+```{r}
+# plot
+autoplot(turist_ts) + 
+  xlab("") + 
+  ylab("Gelen turist sayısı")
+```
+
+
+```{r}
+(lambda <- BoxCox.lambda(turist_ts))
+autoplot(BoxCox(turist_ts,lambda)) + 
+  xlab("") +
+  ggtitle("Box-Cox dönüştürmesi, lambda = -0.071") + 
+  ylab("Gelen turist sayısı")
+```
+
+
+```{r}
+# lambda=0 (log)
+autoplot(BoxCox(turist_ts,0)) + 
+  xlab("") +
+  ggtitle("Box-Cox dönüştürmesi, lambda = 0 (doğal log)") + 
+  ylab("Gelen turist sayısı")
+```
+
+# Kalıntı analizi
+
+```{r}
+# Kalıntı analizi
+# Google hisseleri
+naif_fit1 <- naive(google500)
+naif_tahminler <- fitted(naif_fit1) 
+
+autoplot(google500, series="Veriler") +
+  autolayer(naif_tahminler, series="Tahminler") +
+  xlab("Gün") + ylab("Kapanış fiyatı (US$)") +
+  ggtitle("Google günlük hisse fiyatları")
+```
+
+
+```{r}
+naif_resid <- residuals(naif_fit1)
+
+autoplot(naif_resid) + 
+  xlab("Gün") + 
+  ylab("") + 
+  ggtitle("Google günlük hisse fiyaları, Kalıntılar: Naif yöntem (random walk)")
+# not: naif öngörüde yarın için öngörü bugün gözlenen kapanış değeri olduğu için 
+# kalıntılar günlük değişimlere eşittir. Random Walk sürecini takip eden bir seri
+# için yapılabilecek en iyi öngörü son gözlenen değerdir.
+```
+
+
+```{r}
+# kalıntıların analizi
+gghistogram(naif_resid) + ggtitle("Histogram of residuals")
+```
+
+
+```{r}
+ggAcf(naif_resid) + ggtitle("ACF of residuals")
+```
+
+
+```{r}
+checkresiduals(naif_fit1)
+
+# veya
+# checkresiduals(naive(google500))
+```
+
+Ljung-Box Q istatistiğinin boş hipotezi 10uncu gecikmeye kadar otokorelasyonların sıfır olduğunu söyler (otokorelasyon yoktur). P değeri 0.477 olarak hesaplanmıştır. Öyleyse boş hipotez kabul edilir. Kalıntılarda otokeralasyon yoktur. 
+
+
+
+# Öngörü performansının ölçümü
+
+
+```{r}
+# İstanbul'da sıcaklıklar
+# 2013-2014 yılları test kümesi olarak ayrıldı: 
+temp_ist_train <- window(temp_ist,start=c(2000,1),end=c(2012,12))
+temp_ist_test <- window(temp_ist,start=c(2013,1))
+```
+
+h=24 için basit öngörüleri oluşturalım:
+```{r}
+temp_ist_fit1 <- meanf(temp_ist_train, h=24)
+temp_ist_fit2 <- rwf(temp_ist_train, h=24)
+temp_ist_fit3 <- snaive(temp_ist_train, h=24)
+```
+
+
+```{r}
+# plot data and forecasts 
+autoplot(temp_ist, series="Data") + 
+  autolayer(temp_ist_fit1$mean, series="Ortalama") + 
+  autolayer(temp_ist_fit2$mean, series="Naif")+ 
+  autolayer(temp_ist_fit3$mean, series="Mevsimsel Naif") +
+  geom_vline(xintercept = 2013, linetype=2) +
+  scale_colour_manual(values=c("black","blue","magenta","red"),
+                      breaks=c("Data","Ortalama", "Naif","Mevsimsel Naif" )) +
+  ggtitle("İstanbul'da ortalama sıcaklıklar") +
+  xlab("") + ylab("Sıcaklık (Celsius)") + 
+  theme(legend.title = element_blank())
+```
+
+
+Öngörü yaptığımız dönem veri setimizde mevcut, yani gerçek değerleri biliyoruz. 
+Buradan hareketle öngörü hatalarını hesaplayabiliriz.  
+
+```{r}
+# Öngörü performansı
+accuracy(temp_ist_fit1, temp_ist_test)
+accuracy(temp_ist_fit2, temp_ist_test)
+accuracy(temp_ist_fit3, temp_ist_test)
+```
+
+RMSE kriterine göre en başarılı yöntem test verilerinde en  düşük değeri (2.626) veren mevsimsel naif öngörü yöntemidir. Diğer kriterlere göre de en başarılı yöntemdir. 
+
+Zaman serisi çapraz-geçerleme örneği: 
+```{r}
+# TS cross-validation 
+# forecast accuracy average over test sets
+# evaluation on a rolling forecast origin
+hata <- tsCV(y = google500,       # verileri
+          forecastfunction = rwf, # random walk öngörüleri
+          drift = TRUE,           # drift terimi dahil
+          h = 1,                  # öngörü ufku
+          window = 400)           # pencere genişliği
+```
+
+Yukarıdaki komutlarda ilk 400 gözlem eğitim setinde kullanılır ve bir dönem sonrası için öngörü oluşturulduktan sonra `hata` hesaplanır. Bir dönem sonrasının gerçekleşen değeri eğitim setine eklenir ve tekrar model eğitilir. Yine bir dönem sonrası için öngörü oluşturulur ve `hata` hesaplanır. Bu şekilde adımlar yinelenerek 400-500 arası tüm gözlemler için öngörü hatası ve başarısı (örneğin MSE veya RMSE) hesaplanabilir.  
+
+```{r}
+# RMSE = 
+sqrt(mean(hata^2, na.rm=TRUE))
+```
+
+
+
+# KPSS Durağanlık Testi
+
+Değişkenlerin birinci farkını almalı mıyız? Durağan olmayan bir zaman serisini 
+(random walk ya da random walk with drift gibi) durağanlaştırmanın tek yolu birinci farkını almaktır. Literatürde çok sayıda birim kök testi geliştirilmiştir. Yaygın olarak kullanılan testler ADF testi (Augmented Dickey-Fuller) ve KPSS testidir. 
+
+
+KPSS testinin boş hipotezi değişkenin **durağan olduğunu** söyler: 
+$$H_0:~~seri~durağandır$$
+
+$$H_1:~~seri~durağan~değildir$$
+
+
+KPSS test istatistiğinin p değeri ile karar verilebilir. Yeterince büyük bir p değeri (örneğin 0.05'den büyükse) boş hipotez kabul edilir, yani seri durağandır. 
+
+
+Örnek:
+```{r}
+library(urca) # birim kök ve durağanlık testleri için paket
+# KPSS testi, urca paketi
+kpss1 <- ur.kpss(log(google500))
+summary(kpss1)
+```
+
+KPSS test istatistiği 2.9062 kritik değerlerden büyüktür. Sonuç olarak boş hipotez reddedilir. Boş hipotez serinin durağan olduğunu söylüyordu. Öyleyse seri durağan değildir. KPSS testi `feasts::unitroot_kpss()` fonksiyonu ile de hesaplanabilir: 
+```{r}
+feasts::unitroot_kpss(log(google500))
+```
+
+P değeri 0.01 olduğuna göre $H_0$ reddedilir, seri durağan değildir. 
+
+Birinci fark ile tekrarlayalım: 
+```{r}
+feasts::unitroot_kpss(diff(log(google500)))
+```
+
+P değeri 0.05'den büyüktür. Boş hipotez kabul edilir, birinci fark durağandır. 
+
+Bir değişkenin durağanlaşması için kaç farkının alınması gerektiğini otomatik olarak `feasts::unitroot_ndiffs()` fonksiyonu ile de hesaplayabiliriz. Bu fonksiyonu KPSS testini kullanmaktadır. Google serisine uygularsak: 
+```{r}
+feasts::unitroot_ndiffs(log(google500))
+```
+
+Log google değişkeninin birinci farkının alınması seriyi durağanlaştırmaktadır. Birinci fark için: 
+```{r}
+feasts::unitroot_ndiffs(diff(log(google500)))
+```
+
+Tekrar fark almaya gerek yoktur. 
+
+
+Değişkenin mevsimsel farkını almalı mıyız? Bu amaçla `feasts::nsdiffs()` bu amaçla kullanılabilir: 
+```{r}
+feasts::unitroot_nsdiffs(log(turist_ts))
+```
+
+Bu sonuca göre turist sayısının mevsimsel farkını almaya gerek yoktur. Ancak birinci farkını almak gerekir: 
+```{r}
+feasts::unitroot_ndiffs(log(turist_ts))
+```
+
+
+# ARIMA modelleri 
+
+
+## Örnek: Sanayi Üretim Endeksi
+
+```{r}
+load("Data/tr_macro_monthly.rda")
+sue_full <- ts(tr_macro_monthly$ipi_sa, start = c(1986,1), frequency = 12)
+# Alt dönem: 2010 sonrası için SUE
+sue <- window(sue_full, start = c(2010,1))
+autoplot(log(sue))
+```
+
+```{r}
+ggtsdisplay(log(sue))
+```
+
+ACF üstel olarak yavaş bir şekilde azalıyor, PACF ise 2nci gecikmeden sonra sıfır kabul edilebilir. 
+
+Birim kök testi: 
+```{r}
+# KPSS
+library(feasts)
+unitroot_kpss(log(sue))
+```
+
+Sanay üretim endeksinin durağan olduğunu söyleyen boş hipotez reddedilir. Birinci farkını alarak tekrar testi hesaplayalım: 
+
+```{r}
+unitroot_kpss(diff(log(sue)))
+```
+
+P değeri yeterince büyük olduğu için boş hipotez kabul edilir. Sonuç olarak SÜE serisi birinci farkı alındığında durağanlaşmaktadır. 
+
+```{r}
+unitroot_ndiffs(log(sue))
+unitroot_nsdiffs(log(sue))
+```
+Birinci fark almaya gerek vardır ancak mevsimsel fark almaya gerek yoktur. 
+
+```{r}
+ggtsdisplay(diff(log(sue)))
+```
+
+
+ARIMA(1,1,1) modeli: 
+```{r}
+fit1 <- Arima(log(sue), order=c(1,1,1))
+fit1
+```
+
+Kalıntıların incelenmesi: 
+```{r}
+checkresiduals(fit1)
+```
+
+Kalıntıların ACF grafiği ve Ljung-Box istatistikleri ARIMA(1,1,1) modelinin uygun olduğunu göstermektedir. 
+ 
+
+
+```{r}
+fit2 <- Arima(log(sue), order=c(2,1,1), include.drift = TRUE)
+fit2
+```
+
+Kalıntıların incelenmesi: 
+```{r}
+checkresiduals(fit2)
+```
+
+ARIMA(2,1,1) modelinin kalıntıları da white noise, hangi model daha uygun? Bunun için AIC değeri en küçük olan tercih edilebilir. 
+
+ARIMA(1,1,1) için AIC=-302.11   AICc=-301.8 
+
+ARIMA(2,1,1) için AIC=-305.58   AICc=-304.8 
+
+Bu sonuçlara göre ARIMA(2,1,1) daha küçük bir AIC değerine sahip olduğu için tercih edilebilir. 
+
+Otomatik ARIMA seçimi (Hyndman-Khandakar algoritması)
+
+```{r}
+auto.arima(log(sue))
+```
+
+Bu algoritma ARIMA(1,1,1)(0,0,1)[12] mevsimsel ARIMA modelini seçti
+
+```{r}
+fit3 <- Arima(log(sue), order=c(1,1,1), seasonal = c(0,0,1), include.drift = TRUE)
+fit3
+```
+
+```{r}
+checkresiduals(fit3)
+```
+
+ARIMA ile öngörüler: 
+
+```{r}
+autoplot(forecast(fit3, h=12))
+```
+
+
+## Örnek: Google hisse fiyatları 
+
+```{r}
+# google günlük hisse verileri 
+library(tsibble)
+library(tsibbledata)
+google <- gafa_stock %>% filter(Symbol == "GOOG")
+google <- ts(google$Close, frequency = 1) 
+autoplot(google)
+```
+
+```{r}
+ggtsdisplay(google)
+```
+
+
+
+Birim kök testi: 
+```{r}
+# KPSS
+library(feasts)
+unitroot_kpss(log(google))
+```
+Google hisse fiyatının durağan olduğunu söyleyen boş hipotez reddedilir. Birinci farkını alarak tekrar testi hesaplayalım: 
+
+```{r}
+unitroot_kpss(diff(log(google)))
+```
+
+P değeri yeterince büyük olduğu için boş hipotez kabul edilir. Sonuç olarak Google serisi birinci farkı alındığında durağanlaşmaktadır. 
+
+```{r}
+unitroot_ndiffs(log(google))
+unitroot_nsdiffs(log(google))
+```
+Birinci fark almaya gerek vardır ancak mevsimsel fark almaya gerek yoktur. 
+
+Logaritmik birinci fark serisinin ACF ve PACF grafiklerini inceleyelim: 
+```{r}
+ggtsdisplay(diff(log(google)))
+```
+
+
+ARIMA(1,1,1) modeli deneyelim: 
+```{r}
+goog_fit1 <- Arima(log(google), order = c(1,1,1))
+goog_fit1
+```
+
+Kalıntı analizi: 
+```{r}
+checkresiduals(goog_fit1)
+```
+
+Kalıntılar white noise değil. ARIMA(2,1,1) deneyelim: 
+```{r}
+goog_fit2 <- Arima(log(google), order = c(2,1,1))
+goog_fit2
+```
+
+Kalıntı analizi: 
+```{r}
+checkresiduals(goog_fit2)
+```
+
+Önceki modele göre AICc daha küçük olduğu için ARIMA(2,1,1) tercih edilebilir (bu iki model arasında). 
+
+Otomatik ARIMA modeli seçimi (Hyndman-Khandakar algoritması)
+
+```{r}
+auto.arima(log(google))
+```
+
+
+
+```{r}
+goog_fit3 <- Arima(log(google), order = c(2,1,1), include.drift = TRUE)
+goog_fit3
+```
+
+Kalıntı analizi: 
+```{r}
+checkresiduals(goog_fit3)
+```
+
+```{r}
+autoplot(forecast(goog_fit3,h=30))
+```
+
+
+
+
+
+
+
+<div class="tocify-extend-page" data-unique="tocify-extend-page" style="height: 0;"></div>

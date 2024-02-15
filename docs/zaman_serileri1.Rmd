@@ -1,0 +1,631 @@
+---
+title: "Finansal Zaman Serileri: Temel Kavramlar"
+author: "Prof. Dr. Hüseyin Taştan"
+subtitle: Finansal Ekonometri 
+institute: Yıldız Teknik Üniversitesi - MP İktisat TYL Programı
+#date: " "
+output: 
+  xaringan::moon_reader:
+    css: [default, metropolis]
+    lib_dir: libs
+    nature:
+      beforeInit: "macros.js"
+      highlightStyle: github
+      highlightLines: yes
+      countIncrementalSlides: no
+      ratio: '16:9'
+  html_document:
+    df_print: paged
+  pdf_document: default
+
+
+---
+class: my-medium-font
+
+<style type="text/css">
+.remark-slide-content {
+    font-size: 25px;
+    padding: 1em 4em 1em 4em;
+}
+.my-large-font {
+  font-size: 40px;
+}
+.my-small-font {
+  font-size: 20px;
+}
+.my-medium-font {
+  font-size: 30px;
+}
+.left-column {
+  width: 75%;
+  float: left;
+  padding-top: 1em;
+}
+.right-column {
+  width: 25%;
+  float: right;
+  padding-top: 1em;
+}
+</style>
+
+
+
+
+# Plan
+
+- [Zaman serileri](#zamans) 
+
+- [Örnek Zaman serileri](#ornekler) 
+
+- [White Noise süreci](#whitenoise)
+
+- [Gecikme işlemi](#gecikme) 
+
+- [Durağanlık kavramı](#duraganlik)
+
+- [Otokorelasyon](#acf)
+
+- [Klasik zaman serisi ayrıştırması](#decomp) 
+
+
+---
+name: zamans 
+
+# Zaman Serileri
+
+- $t$ (zaman) ile indekslenmiş $\{Y_t: ~t\in \mathbb{T}\}$  ile gösterilen tek değişkenli rassal değişkenler kümesine zaman serisi ya da stokastik süreç adı verilir.
+
+- İndeks kümesi sonlu ya da sonsuz, sürekli ya da kesikli olabilir. 
+
+- Ekonometri ve istatistik alanlarında zaman serisi denildiği zaman genellikle kesikli zaman indeksi anlaşılır.
+
+- Zaman indeksi kümesinin de birbirine eşit uzaklıkta değerlerden oluştuğu düşünülür ancak bu şart değildir. Biz burada aksi belirtilmedikçe $t_i$ değerlerinin eşit uzaklıklı olduğunu varsayacağız.
+
+- Zamanın reel sayı olduğu sürekli zaman ile indekslenmiş rassal değişkenleri kümesini $\{X(t),~t\in \mathbb{T} \}$ ile göstereceğiz.
+
+
+---
+# Zaman Serileri 
+
+- Kesikli zaman için indeks kümesi $\mathbb{T}=\{0,\pm 1,\pm 2,\ldots\}$ ve sürekli zaman için $\mathbb{T}=\{-\infty<t<\infty \}$ olarak tanımlanabilir. 
+
+- Stokastik sürecin belirli bir gerçekleşmesini (realizasyonunu) $\{y_t: t=1,2,\ldots,T\}$ ya da $\{y_t\}_{t=1}^T$ ile gösterebiliriz. 
+
+- $t$ zamanında gözlemlenen değerler skalar (univariate) ya da vektör değerli (multivariate) olabilir. İlk olarak skalar zaman serilerini inceleyeceğiz. 
+
+- Yukarıda yaptığımız zaman serisi tanımında her $t$ zamanında bir rassal değişkenin gözlemlendiğini ve belirli bir süre sonra bu değerlerin tarihinden hareketle bir gözlem kümesinin ortaya çıktığını söyledik. Açıktır ki bu zaman serisinin olasılık yasalarıyla uyumlu bir şekilde ortaya çıkmasını gerektirir.
+
+---
+name: ornekler 
+
+# Örnek zaman serileri 
+.pull-left[
+- İstanbul'da ortalama sıcaklık
+
+```{r, echo=FALSE}
+knitr::include_graphics("img/temperature.png")
+``` 
+]
+--
+
+.pull-right[
+- İstanbul'da toplam yağış miktarı
+
+```{r, echo=FALSE}
+knitr::include_graphics("img/precip.png")
+``` 
+]
+
+---
+# Örnek zaman serileri 
+.pull-left[
+- Reel GSYİH, Türkiye
+
+```{r, echo=FALSE}
+knitr::include_graphics("img/gdp1.png")
+``` 
+]
+--
+
+.pull-right[
+- Reel GSYİH, seçilmiş ülkeler
+
+```{r, echo=FALSE}
+knitr::include_graphics("img/gdp2.png")
+``` 
+]
+
+---
+# Örnek zaman serileri 
+.pull-left[
+- Türkiye'ye gelen turist sayısı
+
+```{r, echo=FALSE}
+knitr::include_graphics("img/turist.png")
+``` 
+]
+--
+
+.pull-right[
+- İstanbul'da su tüketimi
+
+```{r, echo=FALSE}
+knitr::include_graphics("img/water.png")
+``` 
+]
+
+---
+# Örnek zaman serileri 
+.pull-left[
+- Sanayi üretim endeksi
+
+```{r, echo=FALSE}
+knitr::include_graphics("img/ipi1.png")
+``` 
+]
+--
+
+.pull-right[
+- Sanayi üretim endeksi ve hareketli ortalamalar
+
+```{r, echo=FALSE}
+knitr::include_graphics("img/ipi2.png")
+``` 
+]
+
+
+---
+# Örnek zaman serileri 
+.pull-left[
+- Twitter ve Facebook günlük hisse fiyatları
+
+```{r, echo=FALSE}
+knitr::include_graphics("img/tf.png")
+``` 
+]
+--
+
+.pull-right[
+- S&P500 endeksi günlük kapanış değerleri
+
+```{r, echo=FALSE}
+knitr::include_graphics("img/sp1.png")
+``` 
+]
+
+---
+# Örnek zaman serileri 
+.pull-left[
+- S&P500 endeksi günlük kapanış değerleri
+
+```{r, echo=FALSE}
+knitr::include_graphics("img/sp1.png")
+``` 
+]
+--
+
+.pull-right[
+- S&P500 endeksi günlük getirileri
+
+```{r, echo=FALSE}
+knitr::include_graphics("img/sp2.png")
+``` 
+]
+
+
+---
+# Örnek zaman serileri 
+.pull-left[
+- FTSE günlük getirileri
+
+```{r, echo=FALSE}
+knitr::include_graphics("img/ftse.png")
+``` 
+]
+--
+
+.pull-right[
+- Dow-Jones Industrial Average endeksi günlük getirileri
+
+```{r, echo=FALSE}
+knitr::include_graphics("img/dj.png")
+``` 
+]
+
+
+---
+# Örnek zaman serileri 
+.pull-left[
+- S&P500 endeksi aylık
+
+```{r, echo=FALSE}
+knitr::include_graphics("img/spmonthly1.png")
+``` 
+]
+--
+
+.pull-right[
+- S&P500 endeksi aylık getiriler
+
+```{r, echo=FALSE}
+knitr::include_graphics("img/spmonthly2.png")
+``` 
+]
+
+
+---
+# Örnek: İki zar atımı deneyi 
+
+.pull-left[
+-  Her $t$ zamanında iki zarın atıldığını ve $Y_t$'nin bu zarların toplamını gösterdiğini düşünelim.
+
+- Bu durumda $Y_t$'nin alabileceği değerler $\{2,3,\ldots,12\}$ olacaktır. $T=100$ için bu deneyin tekrarlandığını düşünelim. Şekil bu deneyin bir realizasyonunu göstermektedir.
+]
+.pull-right[
+```{r, echo=FALSE}
+knitr::include_graphics("img/zsa1.png")
+``` 
+]
+
+
+---
+name: whitenoise 
+
+# Pür rassal süreç (white noise süreci)
+
+.pull-left[
+- $\{\epsilon_t: t=1,2,\ldots\}$ ile gösterilen bir stokastik süreç aşağıdaki koşulları sağlıyorsa pür rassal süreç (white noise process) adı verilir:
+  - Ortalaması 0'dır, 
+  - Varyansı, $\sigma^2$,  sabittir,
+  - $t$ ve $s$ gibi iki farklı zaman noktasındaki değerler arasındaki kovaryans sıfırdır: $Cov(\epsilon_t, \epsilon_{s}) = 0,~~t\neq s$. Yani seride otokorelasyon yoktur. 
+  
+
+]
+.pull-right[
+- Bu süreci kısaca $\epsilon_t \sim wn(0,\sigma^2)$ ile göstereceğiz.
+- Örnek: 100 gözlemli bir sentetik white noise serisi
+```{r, echo=FALSE}
+knitr::include_graphics("img/whitenoise.png")
+``` 
+]
+
+
+---
+# Örnek: Deterministik doğrusal trend süreci
+
+.pull-left[
+-  Değişken zamanın doğrusal bir fonksiyonudur: 
+$$y_t = \beta_0 + \beta_1 t + \epsilon_t,~~~\epsilon_t\sim~wn(0,\sigma^2)$$
+
+- Burada $\beta_1$ her $t$ zamanında beklenen ortalama değişimi gösterir (işarete göre düzenli artış veya azalış). 
+
+- $\epsilon_t$ önceden öngörülemeyen pür rassal şok serisidir (white noise). 
+]
+.pull-right[
+- Örnek: farklı eğim katsayılarına göre türetilmiş doğrusal trend gerçekleşmeleri
+
+```{r, echo=FALSE}
+knitr::include_graphics("img/trend1.png")
+``` 
+]
+
+
+---
+# Örnekler 
+.pull-left[
+-  Kırılmalı deterministik trend
+
+```{r, echo=FALSE}
+knitr::include_graphics("img/trend2.png")
+``` 
+]
+.pull-right[
+- Periyodik sinyal + rassal şok 
+
+```{r, echo=FALSE}
+knitr::include_graphics("img/persinyal.png")
+``` 
+]
+
+---
+name: gecikme 
+
+# Gecikme (lag) işlemi 
+
+.pull-left[
+-  Yıllık GSYİH
+
+```{r, echo=FALSE}
+knitr::include_graphics("img/trGDP1.png")
+``` 
+]
+.pull-right[
+- Cari dönem ve 3 gecikme 
+
+```{r, echo=FALSE}
+knitr::include_graphics("img/trGDP2.png")
+``` 
+]
+
+
+---
+# Gecikme (lag) işlemi 
+
+.pull-left[
+-  Yıllık GSYİH Büyüme oranı 
+
+```{r, echo=FALSE}
+knitr::include_graphics("img/trgrowth1.png")
+``` 
+]
+.pull-right[
+- Cari dönem ve 3 gecikme 
+
+```{r, echo=FALSE}
+knitr::include_graphics("img/trgrowth2.png")
+``` 
+]
+
+
+
+
+---
+name: duraganlik 
+
+# Durağanlık 
+
+- Bir zaman serisi, $\{y_t\}_{t=1}^T$, aşağıdaki koşulları sağlıyorsa (kovaryans) durağandır:
+  - Ortalaması sabittir, zamana göre değişmez. 
+  - Varyansı sabittir, zamana göre değişmez. 
+  - İki farklı zamandaki değerler arasındaki otokorelasyon zamana bağlı değildir; ancak uzaklığa bağlı olabilir, yani her $t$ ve herhangi bir tamsayı $h$ için
+$$Cov(y_t, y_{t-h}) = E[(y_t-\mu)(y_{t-h}-\mu)] = \gamma_h$$
+ 
+
+- Kovaryans durağanlık, zayıf durağanlık olarak da isimlendirilir.
+- Kesin durağanlık zayıf durağanlığı gerektirir ancak tersi doğru olmayabilir.
+- Durağan bir zaman serisinin birinci ve ikinci momentleri zamana bağlı değildir.
+- Koşulsuz ortalama sabittir ve zaman içinde değişmez. Benzer şekilde koşulsuz varyans, pozitif, sonlu bir sayıya eşittir ve zamanla değişmez.
+- Otokovaryanslar ise sadece iki zaman noktası arasındaki uzaklığa, $h$, bağlıdır, zamanla birlikte değişmez. 
+
+
+---
+name: acf 
+
+# Otokorelasyon Fonksiyonu (ACF)
+
+- Örneklem otokovaryans fonksiyonu  aralarındaki zaman uzaklığı $h$ olan iki rassal değişken arasındaki kovaryansın bir tahmin edicisidir: 
+$$\hat{\gamma}_h = \frac{1}{T}\sum_{t=h+1}^T (y_t-\bar{y})(y_{t-h}-\bar{y})$$
+Burada $\bar{y}=\frac{1}{T}\sum_{t=1}^T y_t$ örneklem ortalamasıdır.
+
+- Bir zaman serisinin otokorelasyon fonksiyonu (autocorrelation function, ACF) aşağıdaki gibi tanımlanır:
+$$\rho_h = \frac{Cov(y_t, y_{t-h})}{\sqrt{Var(y_t)Var(y_{t-h})}}$$
+
+---
+# Otokorelasyon Fonksiyonu
+
+
+- Durağan süreçler için
+$$\rho_h = \frac{Cov(y_t, y_{t-h})}{Var(y_t)} = \frac{\gamma_h}{\gamma_0}$$
+yazılabilir. Bu durumda ACF sadece $h$'ye bağlı olarak değişir.
+
+- $T$ gözlemden oluşan bir zaman serisi gerçekleşmesinden hareketle, $\rho_h$ aşağıda formülü verilen örneklem otokorelasyon fonksiyonu ile tutarlı bir şekilde tahmin edilebilir:
+$$\hat{\rho}_h = \frac{\hat{\gamma}_h}{\hat{\gamma}_0}$$
+
+- Bir zaman serisinin geçmiş değerlerle olan ilişkisinin özetlenmesinde örneklem otokorelasyon kullanılabilir. 
+
+- Geçmişe bağımlılığı yüksek değişkenler için ACF yüksek değerler alır. 
+
+---
+# Korelogram 
+
+-  Bir zaman serisi gerçekleşmesinin örneklem otokorelasyonlarının $h=1,2,\ldots$ uzaklığına göre grafiğine **korelogram** adı verilir.
+
+- Büyük örneklemlerde Merkezi Limit Teoremi'nden hareketle
+$$\hat{\rho}_j \sim N\left(0,\frac{1}{T}\right)$$
+yazılabilir (Not: $\sqrt{T}\hat{\rho}_j \sim N(0,1)$).
+
+- Öyleyse, sıfır çevresinde %95 güven aralığı $\pm \frac{1.96}{\sqrt{T}}$ formülüyle bulunabilir.
+
+- Örneklem otokorelasyon değerleri sıfır çevresindeki güven bandının içindeyse sıfır olarak kabul edilebilir. Dışındaysa sıfırdan farklıdır.  
+
+
+---
+# Örnek: white noise sürecinin tipik korelogramı 
+.pull-left[
+-  200 gözlemli bir pür rassal süreç gerçekleşmesi 
+
+```{r, echo=FALSE}
+knitr::include_graphics("img/whitenoise2.png")
+``` 
+]
+.pull-right[
+- Örneklem otokorelasyon fonksiyonu (ACF) 
+
+```{r, echo=FALSE}
+knitr::include_graphics("img/wnACF.png")
+``` 
+]
+
+
+---
+# ACF Örnek: İstanbul'da ortalama aylık sıcaklıklar
+
+.pull-left[
+-  Zaman serisi grafiği
+
+```{r, echo=FALSE}
+knitr::include_graphics("img/temperature.png")
+``` 
+]
+.pull-right[
+- Örneklem otokorelasyon fonksiyonu (ACF) 
+
+```{r, echo=FALSE}
+knitr::include_graphics("img/tempACF.png")
+``` 
+]
+
+---
+# ACF Örnek: GSYİH
+
+.pull-left[
+- Reel Gayrisafi Yurtiçi Hasıla 1998ç1-2020ç2 (GSYİH)  Zaman serisi grafiği
+
+```{r, echo=FALSE}
+knitr::include_graphics("img/trgsyih.png")
+``` 
+]
+.pull-right[
+- Örneklem otokorelasyon fonksiyonu (ACF) 
+
+```{r, echo=FALSE}
+knitr::include_graphics("img/trgsyih_acf.png")
+``` 
+]
+
+
+
+
+---
+# Durağan olmayan zaman serileri 
+
+- Bir arkadaşınızla yazı-tura oyunu oynadığınızı düşünelim. 
+
+- Tura gelirse 1 TL kazanıyorsunuz, Yazı gelirse 1 TL kaybediyorsunuz.
+
+- Herhangi bir $t$ zamanındaki toplam kazancınızı $y_t$ ile gösterirsek
+$$y_t = y_{t-1} + z_t,~~~y_0=0$$
+$$z_t = \left\{\begin{array}{rr} 1, & \hbox{Tura gelirse;} \\ -1, & \hbox{Yazı gelirse.}\end{array} \right.$$
+
+
+Herhangi bir $t$ zamanında toplam kazanç $z_t$ rassal değişkenlerinin
+toplamı olarak yazılabilir:
+$$y_t = \sum_{j=1}^t z_j$$ 
+
+---
+# Durağan olmayan zaman serileri 
+
+- Herhangi bir $t$ zamanında $z_t$'nin beklenen değer ve varyansı
+$$E(z_t) = 1(0.5)-1(0.5) = 0,~~Var(z_t)=E(z_t^2)=1$$
+olduğundan $y_t$'nin koşulsuz beklenen değer ve varyansı
+$$E(y_t) = 0,~~Var(y_t)= \sum_{j=1}^t Var(z_j)=t$$
+
+- Serinin beklenen değeri sıfır olduğu halde varyansı zaman indeksine eşittir. 
+- Varyans zamana bağlı olarak arttığı için bu seri durağan değildir. 
+
+- Bu sürece **rassal yürüyüş süreci** (random walk process) adı verilir.
+
+
+---
+# Yazı-Tura oyununun 5 bağımsız gerçekleşmesi 
+
+```{r, echo=FALSE, out.width = "70%", fig.align='center'}
+knitr::include_graphics("img/coinflip1.png")
+``` 
+
+
+---
+name: rw 
+
+# Random Walk Process
+
+- Bir rassal yürüyüş sürecinin cari dönem değeri, yani $y_t$, bir önceki dönemdeki değer ile bir white noise şok serisinin toplamına eşittir: 
+$$y_t = y_{t-1} + \epsilon_t,~~~\epsilon_t\sim wn(0,\sigma^2)$$
+
+- Sürecin ortalama ve varyansı: 
+$$E(y_t) = 0,~~Var(y_t)= \sum_{j=1}^t Var(\epsilon_j)=\sigma^2 t$$
+
+- Ortalama 0 olsa da varyans zamanla birlikte oransal olarak artar.  
+
+- Rassal yürüyüş süreçleri durağan değildir. Durağanlaştırmak için birinci farkının alınması gerekir. 
+
+- Rassal yürüyüş süreçleri geçmiş değerlerine yüksek derecede bağımlılık sergiler. 
+Yani bu seriler için otokorelasyon fonksiyonları çok yavaş azalır. 
+
+---
+# Rassal yürüyüş sürecinin bağımsız gerçekleşmeleri
+
+$y_0=0$, birbirinden bağımsız 5 rassal yürüyüş süreci simülasyonu, $T=100$
+```{r, echo=FALSE, out.width = "70%", fig.align='center'}
+knitr::include_graphics("img/rw1.png")
+``` 
+
+---
+# Rassal yürüyüş sürecinin bağımsız gerçekleşmeleri
+
+$y_0=0$, birbirinden bağımsız 5 rassal yürüyüş süreci simülasyonu, $T=1000$
+```{r, echo=FALSE, out.width = "70%", fig.align='center'}
+knitr::include_graphics("img/rw2.png")
+``` 
+
+---
+# Random Walk sürecinin Otokorelasyonları
+
+Rassal yürüyüş sürecinin otokorelasyon fonksiyonu geçmiş değerlere yüksek bağımlılık sergiler. Şokların etkisi kalıcıdır. 
+
+.pull-left[
+- Rassal Yürüyüş sürecinin 1000 gözlemli bir simülasyonu
+
+```{r, echo=FALSE}
+knitr::include_graphics("img/rwsim1.png")
+``` 
+]
+.pull-right[
+- Örneklem otokorelasyon fonksiyonu (ACF) 
+
+```{r, echo=FALSE}
+knitr::include_graphics("img/rwsim1acf.png")
+``` 
+]
+
+
+
+
+---
+name: decomp
+
+# Klasik Zaman Serisi Ayrıştırması 
+
+- Toplamsal ayrıştırma 
+$$X_t = T_t + C_t + S_t + I_t$$
+
+Bileşenler: 
+
+- $T_t$: trend bileşeni: bu yavaş hareket eden uzun dönem bileşenidir. 
+
+- $C_t$: Çevrimsel (Cyclical) bileşen: orta dönemli hareketleri yansıtan konjonktür dalgalanmaları, resesyon ve canlanma gibi dönemleri kapsayan bileşendir. Tipik olarak bir kaç yıl sürebilir. 
+
+- $S_t$: Mevsimsel (Seasonal) bileşen: aylık, çeyreklik, haftalık veya günlük verilerde gözlemlenen yılın aynı dönemlerindeki benzer hareketleri içerir. Finansal zaman serilerinde işlem günü etkisi bu çerçevede değerlendirilebilir. 
+
+- $I_t$: Düzensiz (Irregular) bileşen bu bileşenlerin dışında kalan rassal hareketlerdir.  
+
+
+---
+# Klasik Zaman Serisi Ayrıştırması 
+
+- Mevsimsel bileşen aşağı yukarı sabit hareket ediyorsa toplamsal bileşen uygundur.  
+
+- Ancak mevsimsel bileşen serinin düzeyi ile orantılı şekilde artıyorsa **çarpımsal ayrıştırma** daha uygundur: 
+$$X_t = T_t \times C_t \times S_t \times I_t$$
+
+- Doğal logaritma dönüştürmesi yapılarak mevsimsel hareketler daha stabil hale geliyorsa bu durumda log-toplamsal ayrıştırma tercih edilebilir: 
+$$\log(X_t) = T_t + C_t + S_t + I_t$$
+
+- Mevsimsel düzeltme: Ayrıştırma yapıldıktan sonra mevsimsel bileşen $S_t$ çıkarılarak mevsimsel düzeltme yapılabilir: $\log(X_t) - S_t = T_t + C_t + I_t$  
+
+
+
+
+
+
+<!-- --- -->
+<!-- # Doğrusal olmayan ilişki  -->
+<!-- Kalıntı ve tahmin değerlerinin serpilme çizimi  -->
+
+<!-- ```{r, echo=FALSE, out.width = "90%", fig.align='center'} -->
+<!-- knitr::include_graphics("img/reg5.png") -->
+<!-- ```  -->
+
+
+    
+    

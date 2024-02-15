@@ -1,0 +1,498 @@
+---
+title: 'Uygulama - Volatilite Modelleri'
+author:
+  name: Prof. Dr. Hüseyin Taştan
+  affiliation: Yıldız Teknik Üniversitesi
+date: ""
+output:
+  html_document:
+    number_sections: yes
+    theme: readable
+    highlight: haddock
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+    keep_md: no
+  word_document:
+    toc: yes
+    toc_depth: '3'
+subtitle: Finansal Ekonometri (MPİ-TYL)
+---
+<style type="text/css"> 
+body{
+  font-size: 12pt;
+}
+code.r{
+  font-size: 12pt;
+}
+</style>
+
+```{r setup, include=FALSE}
+# knitr::opts_chunk$set(echo = TRUE, results = 'asis', fig.show = 'asis', fig.width = 3.5,                         fig.height = 3)
+knitr::opts_chunk$set(echo = TRUE)
+``` 
+
+# Finansal varlık getirilerinin özellikleri
+
+```{r message=FALSE, warning=FALSE}
+# Install packages
+library(wooldridge)
+library(dynlm)
+library(lmtest)
+library(car)
+library(forecast)
+library(tidyverse)
+```
+
+Örnek: S&P500 indeksinin günlük değerleri (quantmod paketiyle indirilmiştir). Önce verileri okutalım: 
+```{r}
+# SP500 xts full data set (daily min max close)
+# 2007-2021
+load("../R/Data/SP500.rda")
+class(SP500)
+head(SP500)
+```
+
+Getiri (return) serisini 
+$$r_t = 100[\log(P_t)-\log(P_{t-1})]$$
+formülüyle hesaplayalım. Burada $P_t$ günlük kapanış (close) fiyatıdır:
+```{r}
+SP500 <- SP500 %>% 
+  mutate(return = 100*(log(close)-lag(log(close), 1, order_by = date)), 
+         returnsq = return^2, 
+         range = high-low)
+```
+
+
+```{r}
+SP500 %>% ggplot(aes(date, return)) +
+  geom_line() +
+  xlab("") + 
+  ylab("Günlük getiriler, %") + 
+  ggtitle("S&P500 günlük getiriler, 03.01.2007-21.12.2021")
+```
+
+```{r}
+# histogram
+SP500 %>% ggplot(aes(return)) +
+  geom_histogram(bins = 30, 
+                 color = "darkblue", 
+                 fill  = "lightblue") 
+```
+```{r}
+# qqnorm(SP500$return)
+# qqline(SP500$return)
+# QQ plot
+SP500 %>% ggplot(aes(sample=return)) +
+  stat_qq() + 
+  stat_qq_line()
+```
+
+QQ grafiğine göre getiri dağılımının normal dağılıma göre çok daha kalın kuyruklu olduğunu görüyoruz. 
+
+
+```{r}
+# çarpıklık ve basıklık 
+skewness <-  function(x) {
+ m3 <- mean((x - mean(x))^3)
+ skewness <- m3/(sd(x)^3)
+ skewness
+}
+
+kurtosis <- function(x) {  
+ m4 <- mean((x - mean(x))^4) 
+ kurtosis <- m4/(sd(x)^4)    
+ kurtosis
+}
+# K <- kurtosis(return)
+# S <- skewness(return)
+# JB <- (n/6) * (S^2 + 0.25 * ((K - 3)^2))
+# pval <- 1 - pchisq(JB, df = 2)
+    
+SP500 %>% drop_na() %>% summarise(mean_ret = mean(return), 
+                    median_ret = median(return),
+                    skewness_ret = skewness(return), 
+                    kurtosis_ret = kurtosis(return))
+
+```
+
+```{r message=FALSE, warning=FALSE}
+library(tseries)
+tseries::jarque.bera.test(SP500$return[-1])
+```
+JB test istatistiği çok büyük bir değer almıştır. P-değeri pratik olarak sıfırdar. Normal dağıldığını söyleyen boş hipotez reddedilir. 
+
+
+
+```{r}
+SP500 %>% ggplot(aes(date, returnsq)) +
+  geom_line() +
+  xlab("") + 
+  ylab("Günlük getirilerin karesi") + 
+  ggtitle("S&P500 günlük getirilerin karesi, 03.01.2007-21.12.2021")
+```
+
+
+```{r}
+SP500 %>% ggplot(aes(date, range)) +
+  geom_line() +
+  xlab("") + 
+  ylab("Günlük aralık") + 
+  ggtitle("S&P500 günlük high-low aralığı, 03.01.2007-21.12.2021")
+```
+
+
+```{r}
+SP500 %>% ggplot(aes(date, range, color = "High-Low range")) +
+  geom_line(alpha=0.3) +
+  geom_line(aes(date,returnsq, color = "Return square")) +
+  xlab("") + 
+  ylab("") +
+  ggtitle("SP500 günlük getiri kareleri ve high-low aralığı") +
+  theme(legend.position = c(0.2,0.8), 
+        legend.title = element_blank())
+```
+
+
+# ARCH Modeli 
+
+Derste öğrendiğimiz ARCH testini hesaplayalım. Önce bir ts nesnesi oluşturalım. 
+```{r}
+# ARCH effects 
+
+# manual test
+# ts nesnesi oluştur
+sp500_returns <- ts(SP500$return[-1], frequency = 1)
+autoplot(sp500_returns)
+```
+
+
+Getiri serisinin ortalamasından farkını alalım. Bunu sabit üzerine regresyonun kalıntılarını alarak hesaplayabiliriz: 
+```{r}
+library(dynlm)
+res1 <- dynlm(sp500_returns ~ 1)
+summary(res1)
+```
+
+Kalıntıların karesinin bir gecikmesi üzerine regresyonu: 
+```{r}
+uhatsq <- residuals(res1)^2
+
+archreg1 <- dynlm(uhatsq ~ L(uhatsq))
+summary(archreg1)
+```
+
+ARCH test istatistiği: 
+```{r}
+T <- nobs(res1)
+q <- length(coef(archreg1))-1
+Rsq <- summary(archreg1)$r.squared
+LM <- (T-q)*Rsq
+LM
+alpha <- 0.05
+cv <- qchisq(1-alpha, q) # critical value 
+cv
+pvalue <- 1-pchisq(LM, q)
+pvalue
+```
+
+ARCH LM = 422.5 olarak hesaplandı. Bu %5 düzeyindeki kritik değerden oldukça büyüktür. ARCH etkisi olmadığını söyleyen boş hipotez reddedilir. 
+
+Bu testi yapabileceğimiz bir R paketi: 
+```{r message=FALSE, warning=FALSE}
+# finTS paketi ile 
+library(FinTS)
+FinTS::ArchTest(sp500_returns, lags = 1, demean = TRUE)
+```
+
+ARCH modelini tahmin etmek için `{tseries}` veya `{rugarch}` paketlerini kullanabiliriz. 
+```{r message=FALSE, warning=FALSE}
+# Tahmin 
+library(tseries)
+# ARCH(1) modeli
+
+arch1 <- garch(sp500_returns, order = c(0, 1))
+summary(arch1)
+```
+
+ARCH(1) modeli tahmin sonuçları: 
+$$\widehat{\sigma}_t^2 = 0.95 + 0.49~ \hat{u}_{t-1}^2$$
+
+```{r}
+sigmahat <- ts(2*arch1$fitted.values[-1,1]^2)
+autoplot(sigmahat)
+```
+
+```{r}
+# Kalıntılarda ARCH etkisi var mı 
+# plot(arch1)
+```
+
+
+```{r}
+# ARCH(2) modeli
+arch2 <- garch(sp500_returns, order = c(0, 2))
+summary(arch2)
+```
+```{r}
+# ARCH(3) modeli
+arch3 <- garch(sp500_returns, order = c(0, 3))
+summary(arch3)
+```
+
+
+
+# GARCH Modeli 
+
+```{r message=FALSE, warning=FALSE}
+# rugarch paketi ile GARCH modellerinin tahmini 
+# http://www.unstarched.net/r-examples/rugarch/a-short-introduction-to-the-rugarch-package/ 
+library(rugarch)
+```
+
+`{rugarch}` paketi ile GARCH(1,1) modelinin simülasyonu: 
+```{r}
+garch11_spec = ugarchspec(
+  variance.model = list(garchOrder=c(1,1)), # GARCH(1,1) modeli
+  mean.model = list(armaOrder=c(0,0)),      # ortalama modeli
+  fixed.pars=list(mu = 0,  # simülasyonda kullanılacak parametreler
+                  omega = 0.1,
+                  alpha1 = 0.1, 
+                  beta1 = 0.8))
+garch11_spec
+```
+
+```{r}
+set.seed(123456) # replikasyon için başlangıç 
+# 1000 gözlemli bir seri türet
+garch11_sim = ugarchpath(garch11_spec, n.sim = 1000) 
+# 
+plot(garch11_sim, which = 2)
+```
+
+```{r}
+# simülasyon dağılımı 
+plot(garch11_sim, which = 4)
+```
+
+```{r}
+# Koşullu standart sapma (koşullu volatilite) simülasyon grafiği
+plot(garch11_sim, which = 1)
+```
+
+
+
+S&P500 getirileri, $r_t$, için bir GARCH(1,1) modeli tahmini: 
+$$r_t = \mu + u_{t},~~~u_t\sim~Normal(0,\sigma_t^2)$$
+$$\sigma_t^2\sim~GARCH(1,1)$$
+
+```{r message=FALSE, warning=FALSE}
+# sGARCH = standard GARCH
+# GARCH(1,1) spesifikasyonu: 
+garch_spec <- ugarchspec(
+  variance.model = list(model = "sGARCH",   # standart GARCH
+                      garchOrder = c(1,1)), # GARCH(1,1) volatilite modeli
+  mean.model = list(armaOrder = c(0,0)),    # ARMA(0,0) ortalama modeli
+  distribution.model="norm")                # Hata dağılımı normal 
+# ekrana yaz
+garch_spec 
+```
+
+Ortalama modeli, varyans modeli ve alternatif şok dağılımları için `{rugarch::ugarchspec()}` fonksiyonunun yardım dosyasını inceleyiniz. 
+
+
+```{r message=FALSE, warning=FALSE}
+garchfit <- ugarchfit(spec = garch_spec, data = sp500_returns)
+coef(garchfit)
+```
+
+Burada `alpha1` ARCH teriminin parametre tahminini, `beta1` ise GARCH teriminin parametre tahminini göstermektedir. 
+
+```{r}
+print(garchfit)
+```
+
+$$\hat{\sigma}^2_{t}=\underset{(0.0067)}{0.033}+\underset{(0.0206)}{0.1551}\hspace{0.05in}\hat{u}^2_{t-1}+\underset{(0.0192)}{0.8234}\hspace{0.05in}\hat{\sigma}^2_{t-1}$$
+
+
+```{r}
+rhat <- garchfit@fit$fitted.values
+autoplot(ts(rhat))
+hhat <- ts(garchfit@fit$sigma^2)
+autoplot(hhat)
+```
+
+```{r message=FALSE, warning=FALSE}
+# GARCH grafikleri, rugarch paketi
+plot(garchfit, which="all")
+```
+
+Bu grafikleri tek tek çizmek için: 
+```{r}
+plot(garchfit, which=1)
+```
+```{r}
+plot(garchfit, which=2)
+```
+```{r}
+plot(garchfit, which=3)
+```
+
+
+```{r}
+# News impact curve
+plot(garchfit, which=12)
+```
+
+"News impact curve" veya "haber etkisi eğrisi" önceki dönemdeki şok ile cari dönemdeki volatilite arasındaki ilişkiyi gösterir. X ekseninde şokların bir gecikmesi, Y ekseninde ise koşullu varyans yer alır. Standart GARCH modelinde negatif ve pozitif şokların volatilite üzerindeki etkisi simetriktir. Negatif şokların daha fazla volatiliteye neden olduğu duruma kaldıraç etkisi (leverage effect) adı verilir. Standart GARCH modelleri kaldıraç etkisini yakalayamaz. Bunun için asimetrik GARCH modelleri (EGARCH gibi) gerekir. 
+
+GARCH modellerinde hata dağılımını normal dışında başka bir dağılım seçebiliriz. Örneğin çarpık (skewed) t dağılımı varsayımı yapılırsa: 
+```{r}
+# GARCH model with t errors 
+garch_spec_t <- ugarchspec(
+  variance.model = list(model = "sGARCH",
+                        garchOrder = c(1,1)),
+  mean.model = list(armaOrder = c(0,0)),
+  distribution.model = "sstd")
+garch_spec_t
+```
+
+
+```{r}
+garchfit_t <- ugarchfit(spec = garch_spec_t, data = sp500_returns)
+coef(garchfit_t)
+```
+
+
+Return serisinin ortalaması için bir ARMA(2,1) modeli, koşullu varyans için de bir GARCH(2,1) modeli tahmin edelim: 
+```{r}
+# model spesifikasyonu
+garch_spec2 <- ugarchspec(
+  variance.model = list(model = "sGARCH", garchOrder = c(2,1)),
+  mean.model = list(armaOrder = c(2,1)), 
+  distribution.model = "std")
+# model tahmini
+garchfit2 <- ugarchfit(spec = garch_spec2, data = sp500_returns)
+coef(garchfit2)
+```
+
+```{r}
+print(garchfit2)
+```
+
+```{r}
+# kalıntıların korelogramı
+plot(garchfit2, which=10)
+```
+
+```{r}
+# kalıntıların karesinin korelogramı
+plot(garchfit2, which=11)
+```
+
+
+
+
+
+# EGARCH Modeli 
+
+```{r}
+egarch_spec <- ugarchspec(
+  variance.model = list(model = "eGARCH",
+                      garchOrder = c(1,1)),
+  mean.model = list(armaOrder = c(1,1)), 
+  distribution.model = "std")
+# tahmin
+egarch_fit1 <- ugarchfit(spec = egarch_spec, 
+                         data = sp500_returns)
+coef(egarch_fit1)
+```
+
+```{r}
+print(egarch_fit1)
+```
+
+Burada `alpha1` kaldıraç etkisini yakalamaktadır. İşareti negatif olduğu için pozitif şokların oynaklığı azalttığı, negatif şokların ise arttırdığı söylenebilir. 
+
+
+```{r}
+# news impact curve
+plot(egarch_fit1, which=12)
+```
+
+
+
+# GJR 
+
+```{r}
+gjr_spec <- ugarchspec(
+  mean.model = list(armaOrder = c(1, 1)),    # getiri ortalaması için ARMA modeli
+  variance.model = list(model = "gjrGARCH"), # GJR modeli
+  distribution.model = "sstd"                # hata dağılımı: skewed student t 
+  )               
+# GJR estimation
+gjr_fit1 <- ugarchfit(spec = gjr_spec, 
+                      data = sp500_returns)
+coef(gjr_fit1)
+```
+
+```{r}
+print(gjr_fit1)
+```
+
+GJR modelinde `gamma1` parametresi kaldıraç etkisini ölçmektedir. Bu parametre pozitif ve istatistik bakımından anlamlı bulunmuştur. 
+
+```{r}
+# kalıntıların korelogramı
+plot(gjr_fit1, which=10)
+```
+
+```{r}
+# kalıntıların karesinin korelogramı
+plot(gjr_fit1, which=11)
+```
+
+
+
+```{r}
+# news impact curve
+plot(gjr_fit1, which=12)
+```
+
+
+
+
+# GARCH-in-mean
+
+```{r}
+# GARCH-in-mean 
+garchm_spec <- ugarchspec(
+  mean.model = list(armaOrder = c(2, 1), 
+                    archm = TRUE, 
+                    archpow = 2),
+  variance.model = list(model = "sGARCH"),
+  distribution.model = "sstd"
+  )
+
+garchm_fit1 <- ugarchfit(spec = garchm_spec, 
+                         data = sp500_returns
+                         )
+coef(garchm_fit1)
+```
+
+```{r}
+print(garchm_fit1)
+```
+
+ARCHM parametresi 0.025 olarak tahmin edilmiştir. Volatilite ile getiri ortalaması arasında bir geribildirim ilişkisinden bahsedilebilir. Oynaklıktaki artış getiri ortalamasını pozitif yönde etkilemektedir. 
+
+
+
+
+
+
+
+
+
+
+<div class="tocify-extend-page" data-unique="tocify-extend-page" style="height: 0;"></div>

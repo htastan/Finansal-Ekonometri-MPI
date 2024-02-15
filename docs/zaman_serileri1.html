@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Finansal Zaman Serileri: Temel Kavramlar</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Prof. Dr. Hüseyin Taştan" />
+    <script src="libs/header-attrs-2.23/header-attrs.js"></script>
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/metropolis.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+.title[
+# Finansal Zaman Serileri: Temel Kavramlar
+]
+.subtitle[
+## Finansal Ekonometri
+]
+.author[
+### Prof. Dr. Hüseyin Taştan
+]
+.institute[
+### Yıldız Teknik Üniversitesi - MP İktisat TYL Programı
+]
+
+---
+
+class: my-medium-font
+
+&lt;style type="text/css"&gt;
+.remark-slide-content {
+    font-size: 25px;
+    padding: 1em 4em 1em 4em;
+}
+.my-large-font {
+  font-size: 40px;
+}
+.my-small-font {
+  font-size: 20px;
+}
+.my-medium-font {
+  font-size: 30px;
+}
+.left-column {
+  width: 75%;
+  float: left;
+  padding-top: 1em;
+}
+.right-column {
+  width: 25%;
+  float: right;
+  padding-top: 1em;
+}
+&lt;/style&gt;
+
+
+
+
+# Plan
+
+- [Zaman serileri](#zamans) 
+
+- [Örnek Zaman serileri](#ornekler) 
+
+- [White Noise süreci](#whitenoise)
+
+- [Gecikme işlemi](#gecikme) 
+
+- [Durağanlık kavramı](#duraganlik)
+
+- [Otokorelasyon](#acf)
+
+- [Klasik zaman serisi ayrıştırması](#decomp) 
+
+
+---
+name: zamans 
+
+# Zaman Serileri
+
+- `\(t\)` (zaman) ile indekslenmiş `\(\{Y_t: ~t\in \mathbb{T}\}\)`  ile gösterilen tek değişkenli rassal değişkenler kümesine zaman serisi ya da stokastik süreç adı verilir.
+
+- İndeks kümesi sonlu ya da sonsuz, sürekli ya da kesikli olabilir. 
+
+- Ekonometri ve istatistik alanlarında zaman serisi denildiği zaman genellikle kesikli zaman indeksi anlaşılır.
+
+- Zaman indeksi kümesinin de birbirine eşit uzaklıkta değerlerden oluştuğu düşünülür ancak bu şart değildir. Biz burada aksi belirtilmedikçe `\(t_i\)` değerlerinin eşit uzaklıklı olduğunu varsayacağız.
+
+- Zamanın reel sayı olduğu sürekli zaman ile indekslenmiş rassal değişkenleri kümesini `\(\{X(t),~t\in \mathbb{T} \}\)` ile göstereceğiz.
+
+
+---
+# Zaman Serileri 
+
+- Kesikli zaman için indeks kümesi `\(\mathbb{T}=\{0,\pm 1,\pm 2,\ldots\}\)` ve sürekli zaman için `\(\mathbb{T}=\{-\infty&lt;t&lt;\infty \}\)` olarak tanımlanabilir. 
+
+- Stokastik sürecin belirli bir gerçekleşmesini (realizasyonunu) `\(\{y_t: t=1,2,\ldots,T\}\)` ya da `\(\{y_t\}_{t=1}^T\)` ile gösterebiliriz. 
+
+- `\(t\)` zamanında gözlemlenen değerler skalar (univariate) ya da vektör değerli (multivariate) olabilir. İlk olarak skalar zaman serilerini inceleyeceğiz. 
+
+- Yukarıda yaptığımız zaman serisi tanımında her `\(t\)` zamanında bir rassal değişkenin gözlemlendiğini ve belirli bir süre sonra bu değerlerin tarihinden hareketle bir gözlem kümesinin ortaya çıktığını söyledik. Açıktır ki bu zaman serisinin olasılık yasalarıyla uyumlu bir şekilde ortaya çıkmasını gerektirir.
+
+---
+name: ornekler 
+
+# Örnek zaman serileri 
+.pull-left[
+- İstanbul'da ortalama sıcaklık
+
+&lt;img src="img/temperature.png" width="1055" /&gt;
+]
+--
+
+.pull-right[
+- İstanbul'da toplam yağış miktarı
+
+&lt;img src="img/precip.png" width="1076" /&gt;
+]
+
+---
+# Örnek zaman serileri 
+.pull-left[
+- Reel GSYİH, Türkiye
+
+&lt;img src="img/gdp1.png" width="1073" /&gt;
+]
+--
+
+.pull-right[
+- Reel GSYİH, seçilmiş ülkeler
+
+&lt;img src="img/gdp2.png" width="1099" /&gt;
+]
+
+---
+# Örnek zaman serileri 
+.pull-left[
+- Türkiye'ye gelen turist sayısı
+
+&lt;img src="img/turist.png" width="1079" /&gt;
+]
+--
+
+.pull-right[
+- İstanbul'da su tüketimi
+
+&lt;img src="img/water.png" width="1080" /&gt;
+]
+
+---
+# Örnek zaman serileri 
+.pull-left[
+- Sanayi üretim endeksi
+
+&lt;img src="img/ipi1.png" width="1057" /&gt;
+]
+--
+
+.pull-right[
+- Sanayi üretim endeksi ve hareketli ortalamalar
+
+&lt;img src="img/ipi2.png" width="1084" /&gt;
+]
+
+
+---
+# Örnek zaman serileri 
+.pull-left[
+- Twitter ve Facebook günlük hisse fiyatları
+
+&lt;img src="img/tf.png" width="1071" /&gt;
+]
+--
+
+.pull-right[
+- S&amp;P500 endeksi günlük kapanış değerleri
+
+&lt;img src="img/sp1.png" width="1072" /&gt;
+]
+
+---
+# Örnek zaman serileri 
+.pull-left[
+- S&amp;P500 endeksi günlük kapanış değerleri
+
+&lt;img src="img/sp1.png" width="1072" /&gt;
+]
+--
+
+.pull-right[
+- S&amp;P500 endeksi günlük getirileri
+
+&lt;img src="img/sp2.png" width="1060" /&gt;
+]
+
+
+---
+# Örnek zaman serileri 
+.pull-left[
+- FTSE günlük getirileri
+
+&lt;img src="img/ftse.png" width="1045" /&gt;
+]
+--
+
+.pull-right[
+- Dow-Jones Industrial Average endeksi günlük getirileri
+
+&lt;img src="img/dj.png" width="1075" /&gt;
+]
+
+
+---
+# Örnek zaman serileri 
+.pull-left[
+- S&amp;P500 endeksi aylık
+
+&lt;img src="img/spmonthly1.png" width="1095" /&gt;
+]
+--
+
+.pull-right[
+- S&amp;P500 endeksi aylık getiriler
+
+&lt;img src="img/spmonthly2.png" width="1067" /&gt;
+]
+
+
+---
+# Örnek: İki zar atımı deneyi 
+
+.pull-left[
+-  Her `\(t\)` zamanında iki zarın atıldığını ve `\(Y_t\)`'nin bu zarların toplamını gösterdiğini düşünelim.
+
+- Bu durumda `\(Y_t\)`'nin alabileceği değerler `\(\{2,3,\ldots,12\}\)` olacaktır. `\(T=100\)` için bu deneyin tekrarlandığını düşünelim. Şekil bu deneyin bir realizasyonunu göstermektedir.
+]
+.pull-right[
+&lt;img src="img/zsa1.png" width="769" /&gt;
+]
+
+
+---
+name: whitenoise 
+
+# Pür rassal süreç (white noise süreci)
+
+.pull-left[
+- `\(\{\epsilon_t: t=1,2,\ldots\}\)` ile gösterilen bir stokastik süreç aşağıdaki koşulları sağlıyorsa pür rassal süreç (white noise process) adı verilir:
+  - Ortalaması 0'dır, 
+  - Varyansı, `\(\sigma^2\)`,  sabittir,
+  - `\(t\)` ve `\(s\)` gibi iki farklı zaman noktasındaki değerler arasındaki kovaryans sıfırdır: `\(Cov(\epsilon_t, \epsilon_{s}) = 0,~~t\neq s\)`. Yani seride otokorelasyon yoktur. 
+  
+
+]
+.pull-right[
+- Bu süreci kısaca `\(\epsilon_t \sim wn(0,\sigma^2)\)` ile göstereceğiz.
+- Örnek: 100 gözlemli bir sentetik white noise serisi
+&lt;img src="img/whitenoise.png" width="856" /&gt;
+]
+
+
+---
+# Örnek: Deterministik doğrusal trend süreci
+
+.pull-left[
+-  Değişken zamanın doğrusal bir fonksiyonudur: 
+`$$y_t = \beta_0 + \beta_1 t + \epsilon_t,~~~\epsilon_t\sim~wn(0,\sigma^2)$$`
+
+- Burada `\(\beta_1\)` her `\(t\)` zamanında beklenen ortalama değişimi gösterir (işarete göre düzenli artış veya azalış). 
+
+- `\(\epsilon_t\)` önceden öngörülemeyen pür rassal şok serisidir (white noise). 
+]
+.pull-right[
+- Örnek: farklı eğim katsayılarına göre türetilmiş doğrusal trend gerçekleşmeleri
+
+&lt;img src="img/trend1.png" width="871" /&gt;
+]
+
+
+---
+# Örnekler 
+.pull-left[
+-  Kırılmalı deterministik trend
+
+&lt;img src="img/trend2.png" width="856" /&gt;
+]
+.pull-right[
+- Periyodik sinyal + rassal şok 
+
+&lt;img src="img/persinyal.png" width="745" /&gt;
+]
+
+---
+name: gecikme 
+
+# Gecikme (lag) işlemi 
+
+.pull-left[
+-  Yıllık GSYİH
+
+&lt;img src="img/trGDP1.png" width="1075" /&gt;
+]
+.pull-right[
+- Cari dönem ve 3 gecikme 
+
+&lt;img src="img/trGDP2.png" width="940" /&gt;
+]
+
+
+---
+# Gecikme (lag) işlemi 
+
+.pull-left[
+-  Yıllık GSYİH Büyüme oranı 
+
+&lt;img src="img/trgrowth1.png" width="1071" /&gt;
+]
+.pull-right[
+- Cari dönem ve 3 gecikme 
+
+&lt;img src="img/trgrowth2.png" width="868" /&gt;
+]
+
+
+
+
+---
+name: duraganlik 
+
+# Durağanlık 
+
+- Bir zaman serisi, `\(\{y_t\}_{t=1}^T\)`, aşağıdaki koşulları sağlıyorsa (kovaryans) durağandır:
+  - Ortalaması sabittir, zamana göre değişmez. 
+  - Varyansı sabittir, zamana göre değişmez. 
+  - İki farklı zamandaki değerler arasındaki otokorelasyon zamana bağlı değildir; ancak uzaklığa bağlı olabilir, yani her `\(t\)` ve herhangi bir tamsayı `\(h\)` için
+`$$Cov(y_t, y_{t-h}) = E[(y_t-\mu)(y_{t-h}-\mu)] = \gamma_h$$`
+ 
+
+- Kovaryans durağanlık, zayıf durağanlık olarak da isimlendirilir.
+- Kesin durağanlık zayıf durağanlığı gerektirir ancak tersi doğru olmayabilir.
+- Durağan bir zaman serisinin birinci ve ikinci momentleri zamana bağlı değildir.
+- Koşulsuz ortalama sabittir ve zaman içinde değişmez. Benzer şekilde koşulsuz varyans, pozitif, sonlu bir sayıya eşittir ve zamanla değişmez.
+- Otokovaryanslar ise sadece iki zaman noktası arasındaki uzaklığa, `\(h\)`, bağlıdır, zamanla birlikte değişmez. 
+
+
+---
+name: acf 
+
+# Otokorelasyon Fonksiyonu (ACF)
+
+- Örneklem otokovaryans fonksiyonu  aralarındaki zaman uzaklığı `\(h\)` olan iki rassal değişken arasındaki kovaryansın bir tahmin edicisidir: 
+`$$\hat{\gamma}_h = \frac{1}{T}\sum_{t=h+1}^T (y_t-\bar{y})(y_{t-h}-\bar{y})$$`
+Burada `\(\bar{y}=\frac{1}{T}\sum_{t=1}^T y_t\)` örneklem ortalamasıdır.
+
+- Bir zaman serisinin otokorelasyon fonksiyonu (autocorrelation function, ACF) aşağıdaki gibi tanımlanır:
+`$$\rho_h = \frac{Cov(y_t, y_{t-h})}{\sqrt{Var(y_t)Var(y_{t-h})}}$$`
+
+---
+# Otokorelasyon Fonksiyonu
+
+
+- Durağan süreçler için
+`$$\rho_h = \frac{Cov(y_t, y_{t-h})}{Var(y_t)} = \frac{\gamma_h}{\gamma_0}$$`
+yazılabilir. Bu durumda ACF sadece `\(h\)`'ye bağlı olarak değişir.
+
+- `\(T\)` gözlemden oluşan bir zaman serisi gerçekleşmesinden hareketle, `\(\rho_h\)` aşağıda formülü verilen örneklem otokorelasyon fonksiyonu ile tutarlı bir şekilde tahmin edilebilir:
+`$$\hat{\rho}_h = \frac{\hat{\gamma}_h}{\hat{\gamma}_0}$$`
+
+- Bir zaman serisinin geçmiş değerlerle olan ilişkisinin özetlenmesinde örneklem otokorelasyon kullanılabilir. 
+
+- Geçmişe bağımlılığı yüksek değişkenler için ACF yüksek değerler alır. 
+
+---
+# Korelogram 
+
+-  Bir zaman serisi gerçekleşmesinin örneklem otokorelasyonlarının `\(h=1,2,\ldots\)` uzaklığına göre grafiğine **korelogram** adı verilir.
+
+- Büyük örneklemlerde Merkezi Limit Teoremi'nden hareketle
+`$$\hat{\rho}_j \sim N\left(0,\frac{1}{T}\right)$$`
+yazılabilir (Not: `\(\sqrt{T}\hat{\rho}_j \sim N(0,1)\)`).
+
+- Öyleyse, sıfır çevresinde %95 güven aralığı `\(\pm \frac{1.96}{\sqrt{T}}\)` formülüyle bulunabilir.
+
+- Örneklem otokorelasyon değerleri sıfır çevresindeki güven bandının içindeyse sıfır olarak kabul edilebilir. Dışındaysa sıfırdan farklıdır.  
+
+
+---
+# Örnek: white noise sürecinin tipik korelogramı 
+.pull-left[
+-  200 gözlemli bir pür rassal süreç gerçekleşmesi 
+
+&lt;img src="img/whitenoise2.png" width="853" /&gt;
+]
+.pull-right[
+- Örneklem otokorelasyon fonksiyonu (ACF) 
+
+&lt;img src="img/wnACF.png" width="853" /&gt;
+]
+
+
+---
+# ACF Örnek: İstanbul'da ortalama aylık sıcaklıklar
+
+.pull-left[
+-  Zaman serisi grafiği
+
+&lt;img src="img/temperature.png" width="1055" /&gt;
+]
+.pull-right[
+- Örneklem otokorelasyon fonksiyonu (ACF) 
+
+&lt;img src="img/tempACF.png" width="907" /&gt;
+]
+
+---
+# ACF Örnek: GSYİH
+
+.pull-left[
+- Reel Gayrisafi Yurtiçi Hasıla 1998ç1-2020ç2 (GSYİH)  Zaman serisi grafiği
+
+&lt;img src="img/trgsyih.png" width="856" /&gt;
+]
+.pull-right[
+- Örneklem otokorelasyon fonksiyonu (ACF) 
+
+&lt;img src="img/trgsyih_acf.png" width="852" /&gt;
+]
+
+
+
+
+---
+# Durağan olmayan zaman serileri 
+
+- Bir arkadaşınızla yazı-tura oyunu oynadığınızı düşünelim. 
+
+- Tura gelirse 1 TL kazanıyorsunuz, Yazı gelirse 1 TL kaybediyorsunuz.
+
+- Herhangi bir `\(t\)` zamanındaki toplam kazancınızı `\(y_t\)` ile gösterirsek
+`$$y_t = y_{t-1} + z_t,~~~y_0=0$$`
+`$$z_t = \left\{\begin{array}{rr} 1, &amp; \hbox{Tura gelirse;} \\ -1, &amp; \hbox{Yazı gelirse.}\end{array} \right.$$`
+
+
+Herhangi bir `\(t\)` zamanında toplam kazanç `\(z_t\)` rassal değişkenlerinin
+toplamı olarak yazılabilir:
+`$$y_t = \sum_{j=1}^t z_j$$` 
+
+---
+# Durağan olmayan zaman serileri 
+
+- Herhangi bir `\(t\)` zamanında `\(z_t\)`'nin beklenen değer ve varyansı
+`$$E(z_t) = 1(0.5)-1(0.5) = 0,~~Var(z_t)=E(z_t^2)=1$$`
+olduğundan `\(y_t\)`'nin koşulsuz beklenen değer ve varyansı
+`$$E(y_t) = 0,~~Var(y_t)= \sum_{j=1}^t Var(z_j)=t$$`
+
+- Serinin beklenen değeri sıfır olduğu halde varyansı zaman indeksine eşittir. 
+- Varyans zamana bağlı olarak arttığı için bu seri durağan değildir. 
+
+- Bu sürece **rassal yürüyüş süreci** (random walk process) adı verilir.
+
+
+---
+# Yazı-Tura oyununun 5 bağımsız gerçekleşmesi 
+
+&lt;img src="img/coinflip1.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+
+---
+name: rw 
+
+# Random Walk Process
+
+- Bir rassal yürüyüş sürecinin cari dönem değeri, yani `\(y_t\)`, bir önceki dönemdeki değer ile bir white noise şok serisinin toplamına eşittir: 
+`$$y_t = y_{t-1} + \epsilon_t,~~~\epsilon_t\sim wn(0,\sigma^2)$$`
+
+- Sürecin ortalama ve varyansı: 
+`$$E(y_t) = 0,~~Var(y_t)= \sum_{j=1}^t Var(\epsilon_j)=\sigma^2 t$$`
+
+- Ortalama 0 olsa da varyans zamanla birlikte oransal olarak artar.  
+
+- Rassal yürüyüş süreçleri durağan değildir. Durağanlaştırmak için birinci farkının alınması gerekir. 
+
+- Rassal yürüyüş süreçleri geçmiş değerlerine yüksek derecede bağımlılık sergiler. 
+Yani bu seriler için otokorelasyon fonksiyonları çok yavaş azalır. 
+
+---
+# Rassal yürüyüş sürecinin bağımsız gerçekleşmeleri
+
+`\(y_0=0\)`, birbirinden bağımsız 5 rassal yürüyüş süreci simülasyonu, `\(T=100\)`
+&lt;img src="img/rw1.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+# Rassal yürüyüş sürecinin bağımsız gerçekleşmeleri
+
+`\(y_0=0\)`, birbirinden bağımsız 5 rassal yürüyüş süreci simülasyonu, `\(T=1000\)`
+&lt;img src="img/rw2.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+# Random Walk sürecinin Otokorelasyonları
+
+Rassal yürüyüş sürecinin otokorelasyon fonksiyonu geçmiş değerlere yüksek bağımlılık sergiler. Şokların etkisi kalıcıdır. 
+
+.pull-left[
+- Rassal Yürüyüş sürecinin 1000 gözlemli bir simülasyonu
+
+&lt;img src="img/rwsim1.png" width="1167" /&gt;
+]
+.pull-right[
+- Örneklem otokorelasyon fonksiyonu (ACF) 
+
+&lt;img src="img/rwsim1acf.png" width="1165" /&gt;
+]
+
+
+
+
+---
+name: decomp
+
+# Klasik Zaman Serisi Ayrıştırması 
+
+- Toplamsal ayrıştırma 
+`$$X_t = T_t + C_t + S_t + I_t$$`
+
+Bileşenler: 
+
+- `\(T_t\)`: trend bileşeni: bu yavaş hareket eden uzun dönem bileşenidir. 
+
+- `\(C_t\)`: Çevrimsel (Cyclical) bileşen: orta dönemli hareketleri yansıtan konjonktür dalgalanmaları, resesyon ve canlanma gibi dönemleri kapsayan bileşendir. Tipik olarak bir kaç yıl sürebilir. 
+
+- `\(S_t\)`: Mevsimsel (Seasonal) bileşen: aylık, çeyreklik, haftalık veya günlük verilerde gözlemlenen yılın aynı dönemlerindeki benzer hareketleri içerir. Finansal zaman serilerinde işlem günü etkisi bu çerçevede değerlendirilebilir. 
+
+- `\(I_t\)`: Düzensiz (Irregular) bileşen bu bileşenlerin dışında kalan rassal hareketlerdir.  
+
+
+---
+# Klasik Zaman Serisi Ayrıştırması 
+
+- Mevsimsel bileşen aşağı yukarı sabit hareket ediyorsa toplamsal bileşen uygundur.  
+
+- Ancak mevsimsel bileşen serinin düzeyi ile orantılı şekilde artıyorsa **çarpımsal ayrıştırma** daha uygundur: 
+`$$X_t = T_t \times C_t \times S_t \times I_t$$`
+
+- Doğal logaritma dönüştürmesi yapılarak mevsimsel hareketler daha stabil hale geliyorsa bu durumda log-toplamsal ayrıştırma tercih edilebilir: 
+`$$\log(X_t) = T_t + C_t + S_t + I_t$$`
+
+- Mevsimsel düzeltme: Ayrıştırma yapıldıktan sonra mevsimsel bileşen `\(S_t\)` çıkarılarak mevsimsel düzeltme yapılabilir: `\(\log(X_t) - S_t = T_t + C_t + I_t\)`  
+
+
+
+
+
+
+&lt;!-- --- --&gt;
+&lt;!-- # Doğrusal olmayan ilişki  --&gt;
+&lt;!-- Kalıntı ve tahmin değerlerinin serpilme çizimi  --&gt;
+
+&lt;!-- ```{r, echo=FALSE, out.width = "90%", fig.align='center'} --&gt;
+&lt;!-- knitr::include_graphics("img/reg5.png") --&gt;
+&lt;!-- ```  --&gt;
+
+
+    
+    
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script src="macros.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false,
+"ratio": "16:9"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+// add `data-at-shortcutkeys` attribute to <body> to resolve conflicts with JAWS
+// screen reader (see PR #262)
+(function(d) {
+  let res = {};
+  d.querySelectorAll('.remark-help-content table tr').forEach(tr => {
+    const t = tr.querySelector('td:nth-child(2)').innerText;
+    tr.querySelectorAll('td:first-child .key').forEach(key => {
+      const k = key.innerText;
+      if (/^[a-z]$/.test(k)) res[k] = t;  // must be a single letter (key)
+    });
+  });
+  d.body.setAttribute('data-at-shortcutkeys', JSON.stringify(res));
+})(document);
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

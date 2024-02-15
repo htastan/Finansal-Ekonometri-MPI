@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Zaman Serileriyle Regresyon Analizi</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Prof. Dr. Hüseyin Taştan" />
+    <script src="libs/header-attrs-2.23/header-attrs.js"></script>
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/metropolis.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+.title[
+# Zaman Serileriyle Regresyon Analizi
+]
+.subtitle[
+## Finansal Ekonometri
+]
+.author[
+### Prof. Dr. Hüseyin Taştan
+]
+.institute[
+### Yıldız Teknik Üniversitesi - MP İktisat TYL Programı
+]
+
+---
+
+class: my-medium-font
+
+&lt;style type="text/css"&gt;
+.remark-slide-content {
+    font-size: 25px;
+    padding: 1em 4em 1em 4em;
+}
+.my-large-font {
+  font-size: 40px;
+}
+.my-small-font {
+  font-size: 20px;
+}
+.my-medium-font {
+  font-size: 30px;
+}
+.left-column {
+  width: 75%;
+  float: left;
+  padding-top: 1em;
+}
+.right-column {
+  width: 25%;
+  float: right;
+  padding-top: 1em;
+}
+&lt;/style&gt;
+
+
+
+
+# Plan
+
+- [Statik model](#statik) 
+
+- [Dinamik modeller: Dağıtılmış gecikme modeli](#dinamik) 
+
+- [Vektör Otoregresyon Modeli (VAR)](#var) 
+
+- [Granger nedensellik testi](#granger) 
+
+
+---
+name: statik
+
+# Regresyon Analizi: Statik Model 
+
+- Elimizde `\(y_t\)` ve `\(x_t\)` ile gösterdiğimiz iki zaman serisi olsun. Eğer `\(x_t\)`, `\(y_t\)`'yi aynı zamanda etkiliyorsa bu ilişki aşağıdaki gibi yazılabilir: 
+`$$y_t = \beta_0 + \beta_1 x_t + u_t, ~~~t=1,2,\ldots, n$$`
+Burada `\(u_t\)` model dışında bırakılmış faktörleri ifade eden bir rassal değişkendir. 
+- Model başka zaman dilimleri için de yazılabilir. Örneğin,  
+`$$y_{t-1} = \beta_0 + \beta_1 x_{t-1} + u_{t-1}$$`
+
+- Modelin tahmininde Sıradan En Küçük Kareler (Ordinary Least Squares, OLS) yöntemi kullanılabilir. OLS tahmincileri belirli şartlar altında sapmasız ve en düşük varyanslıdır. 
+
+
+---
+# Statik Model 
+
+- `\(t-1\)`'den `\(t\)`'ye değişimi `\(\Delta\)` ile gösterirsek, `\(\Delta y_t = y_t - y_{t-1}\)`, aşağıdaki modele ulaşırız: 
+`$$\Delta y_t = \beta_1 \Delta x_t + \Delta u_t$$`
+Eğer `\(\Delta u_t = 0\)` ise, `\(x\)`'deki değişimin `\(y\)` üzerindeki etkisi 
+`$$\frac{\Delta y_t}{\Delta x_t} = \beta_1$$`
+
+- Eğer `\(x\)` değişkeninin `\(y\)` üzerindeki etkisi aynı zaman diliminde ortaya çıkıyorsa statik modeller uygun olur. 
+
+- Bazı durumlarda bir değişkenin etkisi bir kaç dönem sürebilir. Bu durumda dinamik modeller uygun olur. 
+
+---
+# Doğrusal olmayan dönüştürmeler
+
+- Bazı durumlarda değişkenler arasındaki ilişkileri daha iyi betimleyebilmek amacıyla bazı dönüştürmeler uygulamak gerekebilir. 
+
+- Örneğin; yarı-logaritmik modelde `\(x\)` değişkeni orijinal ölçü birimiyle modelde yer alırken `\(y\)`'nin doğal logaritmasını alarak doğrusal bir ilişki elde ederiz: 
+`$$\log(y_t) = \beta_0 +  \beta_1 x_t + u_t$$`
+Eğim katsayısının yorumu: `\(x_t\)`'deki bir birim değişimin `\(y_t\)`'de kestirilen ortalama yüzde değişimi (100 ile çarpıldıktan sonra), yani 
+`$$\frac{\Delta \log(y_t)}{\Delta x_t}\approx \%\Delta y_t = 100\beta_1$$`
+
+---
+# Doğrusal olmayan dönüştürmeler 
+
+- Pratikte yaygın olarak kullanılan başka bir dönüştürme log-log ya da log-doğrusal modeldir. 
+`$$\log(y_t) = \beta_0 +  \beta_1 \log(x_t) + u_t$$`
+Eğim katsayısının yorumu: `\(x_t\)`  %1 değişirse `\(y_t\)`'de tahmin edilen değişim 
+% `\(\beta_1\)` olur. (y'nin x'e göre esnekliği)
+
+- Karesel model: 
+`$$y_t = \beta_0 + \beta_1 x_t + \beta_2 x_t^2 +  u_t$$`
+`\(\beta_1\)` ve `\(\beta_2\)`'nin işaretine göre ilişki U ya da ters-U biçiminde olabilir. 
+
+
+---
+name: dinamik 
+
+# Dinamik Modeller: Dağıtılmış Gecikme Modeli 
+
+- `\(x\)`'in etkisinin hem cari dönemde hem de gecikmeli olarak ortaya çıktığını varsayarsak:  
+`$$y_t = \alpha_0 + \delta_0 x_t + \delta_1 x_{t-1} + \delta_2 x_{t-2} + u_t$$`
+Bu iki gecikmeli bir sonlu dağıtılmış gecikme modelidir. 
+
+- `\(\delta_0\)`: `\(x\)`'in `\(y\)` üzerindeki ani etkisi (cari dönemde oluşan)
+
+- `\(\delta_1\)`: bir dönem sonra ortaya çıkan etki, `\(\delta_2\)`: iki dönem sonra ortaya çıkan etki 
+
+- İki dönem sonra ortaya çıkan toplam etki ya da uzun dönem etkisi: `\(\delta_0+\delta_1+\delta_2\)`
+
+---
+name: var 
+
+# Vektör Otoregresyon (VAR) modeli
+
+- VAR (vector autoregression) modeli bir değişkenin `\(t\)` zamanındaki değerini kendi geçmişiyle ve diğer değişkenlerinin geçmiş değerleriyle açıklamaya ya da öngörmeye çalışır. 
+
+- Örneğin `\(y_t\)` ve `\(x_t\)` için gecikme uzunluğu 1 olan VAR, yani VAR(1) 
+`$$y_t = c_1 + a_{11} y_{t-1} + b_{11} x_{t-1} + \epsilon_{1t}$$`
+`$$x_t = c_2 + a_{21} y_{t-1} + b_{21} x_{t-1} + \epsilon_{2t}$$`
+
+- VAR(2)
+`$$y_t = c_1 + a_{11} y_{t-1} + a_{12} y_{t-2}+ b_{11} x_{t-1}+ b_{12} x_{t-2} + \epsilon_{1t}$$`
+`$$x_t = c_2 + a_{21} y_{t-1} + a_{22} y_{t-2}+ b_{21} x_{t-1}+ b_{22} x_{t-2} + \epsilon_{2t}$$`
+
+
+---
+# Vektör Otoregresyon (VAR) modeli
+
+- Benzer şekilde daha fazla gecikmeler ( `\(p\)` ) eklenerek VAR modeli genişletilebilir. Hangi değişkenlerin ekleneceği alan bilgisi ve teorik modellerden hareketle belirlenebilir. 
+
+- VAR(p) modelleri özünde ateorik, istatistiksel modellerdir. Değişkenlerin kısa dönem davranışını betimlemede oldukça faydalıdırlar. 
+
+- Bu nedenle ağırlıklı olarak öngörü amacıyla kullanılırlar. 
+
+- Her bir denklem Sıradan En Küçük Kareler (OLS) yöntemiyle tahmin edilebilir. 
+
+- Değişkenlerin durağan olması gerekir. Trend-durağan değişkenler için uygun trend teriminin eklenmesi mümkündür. 
+
+---
+name: granger 
+
+# Granger-nedensellik testi 
+
+- Adında geçse de Granger-nedensellik testi klasik nedensellik kavramıyla karıştırılmamalıdır. 
+
+- Granger-nedensellik testi aslında öngörülebilirlik testidir. Basit (iki değişkenli) bir VAR(2) modelinin ilk denklemini düşünelim: 
+`$$y_t = c_1 + a_{11} y_{t-1} + a_{12} y_{t-2}+ b_{11} x_{t-1}+ b_{12} x_{t-2} + \epsilon_{1t}$$`
+
+- Eğer `\(x\)`, `\(y\)`'nin Granger-nedeni ise bu modelde yer alan `\(x\)`'in gecikmeli katsayılarının birlikte 0 olmaması gerekir. Yani istatistiksel bakımdan anlamlı olmalılar. 
+
+- Tersi durumda `\(x\)`, `\(y\)`'nin Granger-nedeni değilse `\(x\)`'in gecikmelerinin katsayıları birlikte istatistik bakımından anlamsızdır. 
+
+---
+# Granger-nedensellik Testi 
+
+- Boş ve alternatif hipotezler: 
+`$$H_0: x,~y\mbox{'nin Granger-nedeni değildir}\Leftrightarrow b_{11}=b_{12}=0$$`
+`$$H_1: x,~y\mbox{'nin Granger-nedenidir}\Leftrightarrow b_{11}\neq b_{12}\neq 0$$`
+
+- Model tahmin edildikten sonra standart F testiyle sınanabilir. 
+
+- Boş hipotez verilerle uyumluysa, `\(y_t\)`'yi öngörmekte `\(x\)`'in geçmiş değerlerinin önemli olmadığı sonucu çıkar. 
+
+- Modelin gecikme uzunluğu `\(p\)` bilgi kriterleriyle (örneğin Akaike Information Criterion - AIC) seçilebilir. Minimum AIC değerini veren `\(p\)` tercih edilir. 
+
+- Modelin kalıntıları white noise olmalıdır.
+
+---
+name: irf
+
+# Etki Tepki Fonksiyonu
+
+- Bir VAR modelinde her denklem için bir hata terimi (şok) bulunur. Bir değişken hem kendi şoklarından hem de VAR modelindeki diğer şoklardan etkilenir.  
+
+- Değişkenlerden birine verilen şokun tüm sistemi zaman içinde nasıl etkilediğini incelemek isteyebiliriz. 
+
+- Etki tepki fonksiyonu (impulse response function - IRF) bir şokun tüm sisteme nasıl yayıldığını izlemekte faydalıdır. 
+
+- IRF'nin ilk adımı VAR modelinin hareketli ortalamalar formunda yeniden yazılmasıdır. Böylece bir şokun diğerlerini nasıl etkilediği takip edilebilir. 
+
+- IRF bir etki (impulse) değişkeninde meydana gelen bir şokun (örneğin bir birim ya da bir standart sapma) tepki (response) değişkeninde `\(h\)` dönem sonra ne kadarlık bir değişime yol açtığını gösterir. Genellikle `\(h\)`'ye göre dinamik etki görselleştirilerek yorumlanır. 
+
+- Pratikte özellikle ortogonalize IRF kullanılıyorsa değişkenlerin sırası önemlidir. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script src="macros.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false,
+"ratio": "16:9"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+// add `data-at-shortcutkeys` attribute to <body> to resolve conflicts with JAWS
+// screen reader (see PR #262)
+(function(d) {
+  let res = {};
+  d.querySelectorAll('.remark-help-content table tr').forEach(tr => {
+    const t = tr.querySelector('td:nth-child(2)').innerText;
+    tr.querySelectorAll('td:first-child .key').forEach(key => {
+      const k = key.innerText;
+      if (/^[a-z]$/.test(k)) res[k] = t;  // must be a single letter (key)
+    });
+  });
+  d.body.setAttribute('data-at-shortcutkeys', JSON.stringify(res));
+})(document);
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

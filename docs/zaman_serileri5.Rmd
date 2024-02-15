@@ -1,0 +1,373 @@
+---
+title: "Volatilite Modelleri"
+author: "Prof. Dr. Hüseyin Taştan"
+subtitle: Finansal Ekonometri 
+institute: Yıldız Teknik Üniversitesi - MP İktisat TYL Programı
+#date: " "
+output: 
+  xaringan::moon_reader:
+    css: [default, metropolis]
+    lib_dir: libs
+    nature:
+      beforeInit: "macros.js"
+      highlightStyle: github
+      highlightLines: yes
+      countIncrementalSlides: no
+      ratio: '16:9'
+  html_document:
+    df_print: paged
+  pdf_document: default
+
+
+---
+class: my-medium-font
+
+<style type="text/css">
+.remark-slide-content {
+    font-size: 25px;
+    padding: 1em 4em 1em 4em;
+}
+.my-large-font {
+  font-size: 40px;
+}
+.my-small-font {
+  font-size: 20px;
+}
+.my-medium-font {
+  font-size: 30px;
+}
+.left-column {
+  width: 75%;
+  float: left;
+  padding-top: 1em;
+}
+.right-column {
+  width: 25%;
+  float: right;
+  padding-top: 1em;
+}
+</style>
+
+
+
+
+# Plan
+
+- [Finansal zaman serilerinin özellikleri](#volatilite)  
+
+- [Oynaklık modellemesi](#models)
+
+- [ARCH modeli](#arch)
+
+- [GARCH](#garch)
+
+- [EGARCH](#egarch)
+
+- [GJR modeli](#gjr)
+
+- [GARCH-in-mean](#garchm)
+
+
+
+---
+name: volatilite
+
+# Finansal verilerin zaman serisi özellikleri  
+
+- Volatilite (oynaklık): finansal zaman serilerinde özellikle varlık getirilerindeki değişkenlik olarak tanımlanabilir. Tipik olarak standart sapma ile ölçülebilir. 
+
+- Doğrusal zaman serisi modellerinde hata teriminin varyansının zaman içinde sabit olduğu varsayılır. Ancak bu finansal zaman serileri için geçerli olmayabilir. 
+
+- Finansal zaman serilerinin özellikleri aşağıdaki gibi sıralanabilir: 
+  - Leptokurtosis 
+  - Oynaklık kümelenmesi
+  - Kaldıraç etkisi 
+  
+- Bu özellikleri yakalayabilmek amacıyla çeşitli modeller geliştirilmiştir. Bu modeller arasında ARCH modeli, GARCH modeli ve bunların çeşitli doğrusal olmayan uzantıları sayılabilir. 
+
+---
+# Finansal verilerin zaman serisi özellikleri 
+
+- **Dağılımın kalın kuyruklu olması** (leptokurtosis): normal dağılım ile kıyaslandığında çok büyük veya çok küçük değerlerin gözlemlenmesi olasılığı daha yüksektir. Tipik olarak kurtosis değeri 3'den daha büyüktür. 
+
+- **Oynaklık kümelenmesi**: finansal piyasalarda değişkenlik/volatilite zaman içinde birbirini takip eden kümeler halinde oluşur. Yani yüksek getirileri veya kayıpları yine yüksek getiri veya kayıplar takip eder. Benzer şekilde küçük getiriler (artı veya eksi) yine küçük getirileri takip eder. Bunun bir sebebi piyasalara bilginin zamanda eşit olarak yayılmış bir şekilde değil, düzensiz bir şekilde ulaşmasıdır. 
+
+- **Kaldıraç (leverage) etkisi**: finansal varlık fiyatlarında bir azalmanın oynaklık üzerinde arttırıcı bir etkisi vardır. Fiyattaki bir azalmanın volatilite üzerindeki etkisi, aynı orandaki bir fiyat artışının oynaklık üzerindeki etkisinden daha büyüktür. 
+
+
+---
+# S&P500 Günlük Getiriler
+```{r, echo=FALSE, out.width = "85%", fig.align='center'}
+knitr::include_graphics("img/sp500vol2.png")
+```
+
+---
+# S&P500 Günlük Getiriler
+```{r, echo=FALSE, out.width = "85%", fig.align='center'}
+knitr::include_graphics("img/sp500vol3.png")
+```
+
+---
+# S&P500 Günlük Getirilerin Histogramı
+```{r, echo=FALSE, out.width = "85%", fig.align='center'}
+knitr::include_graphics("img/sp500vol4.png")
+```
+
+
+---
+# Normallik testi (Jarque-Bera)
+
+- Finansal ekonometri uygulamalarında Jarque-Bera normallik testi yaygın olarak kullanılmaktadır. Bu test değişkenin üçüncü ve dördüncü momentlerine dayanmaktadır. 
+
+- Normal dağılmış bir rassal değişkenin skewness (çarpıklık) istatistiği 0, kurtosis (basıklık) ise 3'tür. Jarque-Bera testi değişkenin örneklem çarpıklık ve basıklık istatistiklerinin bu değerlerden ne kadar farklı olduğuna dayanır. 
+
+- Test istatistiği
+$$\mathrm{JB}=\frac{n}{6} \cdot\left(S^{2}+\frac{(K-3)^{2}}{4}\right)$$
+Burada $S$ çarpıklık, $K$ ise basıklık (kurtosis) katsayısıdır. 
+
+- $H_0: Normal~dağılım$ hipotezi altında $JB$ istatistiği 2 serbestlik derecesi ile ki-kare dağılımına uyar. Yeterince büyük bir JB istatistiği değişkenin normal dağılmadığına işaret eder. 
+
+
+---
+name: models 
+
+# Oynaklık modellemesi 
+
+- Finansal varlık getirilerinin volatilitesi, örneğin standart sapması veya varyansı, basit bir risk ölçütü olarak düşünülebilir. 
+
+- Piyasa riskinin hesaplanabilmesi için oynaklığın hesaplanması veya öngörülmesi gerekebilir (value-at-risk hesaplamaları)
+
+- Finansal ekonometri literatüründe çok sayıda volatilite modeli geliştirilmiştir. Bu derste bu modellerden bazılarını inceleyeceğiz.  
+
+- Tarihsel oynaklık: bir finansal varlık getirisinin belli bir döneme ait gerçekleşmesinde hareketle hesaplanan varyans ve standart sapmadır. 
+
+---
+# Oynaklık modellemesi 
+
+- İma edilen oynaklık (implied volatility): finansal opsiyonların fiyatlamasında bir oynaklık ölçütü gereklidir. 
+
+- İma edilen oynaklık gözlemlenen opsiyon fiyatlarından hareketle hesaplanan oynaklıktır. İma edilen oynaklık opsiyonun ömrü boyunca piyasanın öngördüğü oynaklık düzeyini gösterir. 
+
+- Üstel ağırlıklı hareketle ortalamalar (EWMA-Exponentially Weighted Moving Average): tarihsel volatilitenin bir versiyonudur. Yakın tarihlerin volatilitesine daha fazla ağırlık verecek şekilde ağırlıklı ortalama hesabına dayanır. 
+
+- Stokastik volatilite modelleri, otoregresif volatilite modelleri: günlük getiri serileri için getirilerin karesi veya günlük aralık (range) değerleri o gün için volatilite tahmini olarak kullanılabilir. Bu volatilite tahmini AR(p) veya ARMA(p,q) yaklaşımları ile modellenebilir.
+
+
+---
+# S&P500 getiriler
+
+```{r, echo=FALSE, out.width = "85%", fig.align='center'}
+knitr::include_graphics("img/sp500vol0.png")
+```
+
+
+
+---
+# S&P500 volatilitesi
+
+```{r, echo=FALSE, out.width = "85%", fig.align='center'}
+knitr::include_graphics("img/sp500vol1.png")
+```
+
+
+---
+name: arch 
+
+# Otoregresif koşullu değişen varyans modeli
+
+
+- Klasik regresyon analizinde hata teriminin sabit varyanslı ve normal dağıldığı varsayılır: 
+$$y_t= \beta_0 + \beta_1 x_{1t} + \beta_2 x_{2t} + \ldots + \beta_k x_{kt} + u_t$$
+$$u_t\sim~N(0,~\sigma^2)$$
+
+- Hata varyansının $Var(u_t)=\sigma^2$ sabit olması varsayımı finansal zaman serileri için geçerli olmayabilir (heteroskedasticity=değişen varyans).
+
+- ARCH (AutoRegressive Conditional Heteroskedasticity) modelinde $t$ zamanındaki volatilite (oynaklık) bir önceki dönemdeki hata teriminin karesinin bir fonksiyonudur. 
+
+
+---
+# Otoregresif koşullu değişen varyans modeli
+
+- ARCH modeli (birinci derece)
+
+$$\sigma_t^2 = Var(u_t|u_{t-1},u_{t-2},\ldots)=E[u_t^2|u_{t-1},u_{t-2},\ldots]$$
+
+$t$ zamanındaki koşullu değişen varyans bir önceki dönemdeki hatanın karesine bağlıdır; ARCH(1) modeli: 
+$$\sigma_t^2 = \alpha_0 + \alpha_1 u_{t-1}^2$$
+
+- Finansal verilerin volatilitesinin modellenmesinde ARCH modelleri yaygın olarak kullanılmaktadır. Bu model Engle (1982) tarafından önerilmiştir. 
+
+- Volatilite daha önceki dönemlerdeki şokların karelerine bağlı ise gecikme sayısı arttırılabilir. 
+
+---
+# ARCH(q) modeli 
+
+$$y_t= \beta_0 + \beta_1 x_{1t} + \beta_2 x_{2t} + \ldots + \beta_k x_{kt} + u_t$$
+
+$$u_t\sim~N(0,~\sigma_t^2)$$
+
+$$\sigma_t^2 = \alpha_0 + \alpha_1 u_{t-1}^2+ \alpha_2 u_{t-2}^2+\ldots+\alpha_q u_{t-q}^2$$
+
+- Literatürde cari dönemdeki koşullu varyansı ifade etmek üzere $h_t\equiv \sigma_t^2$ notasyonu da kullanılmaktadır.
+
+- $z_t$ standart normal dağılıma uyan bir rassal değişken ise, yani $z_t\sim N(0,1)$, hata terimini $u_t = z_t\sigma_t$ şeklinde yazabiliriz. Bu durumda ARCH(1) modeli için koşullu standart sapma: 
+$$\sigma_t = \sqrt{\alpha_0 + \alpha_1 u_{t-1}^2}$$
+
+olarak yazılabilir. Bu şekilde ARCH(1) modelinin simülasyonunu yapabiliriz. 
+
+
+---
+# ARCH etkisinin testi
+
+- **Birinci adım**: regresyon modelini tahmin et; kalıntıları kaydet: $\hat{u}_t$
+- **İkinci adım**: Kalıntıların karesinin kendi gecikmeleri üzerine regresyonunu kur ve bu modelin $R^2$ değerini kaydet: 
+$$\hat{u}_t^2  = \alpha_0 + \alpha_1 \hat{u}_{t-1}^2+ \alpha_2 \hat{u}_{t-2}^2+\ldots+\alpha_q \hat{u}_{t-q}^2+v_t$$
+
+- **Üçüncü adım**: ARCH etkisi yoktur hipotezi altında, yani, 
+$$H_0: \alpha_1=\ldots=\alpha_q=0$$
+test istatistiğini, $(T-q)R^2$, hesapla: 
+$$ARCH~LM~test = (T-q)R^2\sim~\chi^2(q)$$
+
+Burada $T$ gözlem sayısıdır. ARCH LM test istatistiği $q$ serbestlik derecesi ile ki-kare dağılımına uyar. Yeterince büyük bir LM istatistiği boş hipotezin reddi ile sonuçlanır. Yani bu durumda ARCH etkisi vardır. 
+
+
+
+---
+# Getirilerin karesinin korelogramı
+```{r, echo=FALSE, out.width = "85%", fig.align='center'}
+knitr::include_graphics("img/arch0.png")
+```
+
+
+---
+# ARCH(q) modelinin yetersizlikleri
+
+
+- Tipik olarak gecikme sayısı $q$, ARMA modellerinde olduğu gibi korelogram yapısı incelenerek ve white noise kalıntılar elde edecek şekilde belirlenebilir. 
+
+- ARCH(q) modelinde, önceki grafikte de görüldüğü gibi, değişen varyansın dinamiği gecikme sayısının çok yüksek olmasını gerektirebilir. 
+
+- Koşullu varyansın her zaman pozitif olması gerekir. Bunun için örneğin ARCH(1) modelinde $\alpha_1>0$ kısıtının konması gerekir. Ancak pratikte bu koşul sağlanmayabilir. 
+
+- ARCH modelinin basit bir genelleştirmesi ile bu problemlerin bazıları çözülebilir. 
+
+- Bu modele genelleştirilmiş ARCH veya GARCH modeli adı verilir. 
+
+
+---
+name: garch 
+
+# GARCH modeli 
+
+- Generalized ARCH (GARCH) modelinde koşullu varyans sadece hata karesinin gecikmelerine değil kendi gecikmelerine de bağlıdır. 
+
+- Örneğin GARCH(1,1) modeli aşağıdaki gibi yazılabilir: 
+$$\sigma_t^2 = \omega + \alpha_1 u_{t-1}^2+\beta_1\sigma_{t-1}^2$$
+Burada $\sigma_t^2$ koşullu varyansı ifade etmektedir. Model ARMA(1,1) modeli ile benzerlik gösterir. 
+
+- Durağanlık kısıtı: $\alpha_1+\beta_1<1$
+
+- $\alpha_1+\beta_1=1$: integrated GARCH
+
+- Durağanlık kısıtı altında koşulsuz varyans: 
+$$Var(u_t)\equiv \sigma^2=\frac{\omega}{1-\alpha_1-\beta_1}$$
+
+
+---
+# GARCH(p,q)
+
+- Bollerslev (1986) tarafından önerilen genel GARCH(p,q) modeli aşağıdaki gibi yazılabilir: 
+$$\sigma_t^2 = \omega + \sum_{i=1}^q \alpha_i u_{t-i}^2+ \sum_{j=1}^p \beta_j \sigma_{t-j}^2$$
+
+- GARCH ve ARCH modellerinin tahmininde normallik varsayımı altında en yüksek olabilirlik (maximum likelihood) yöntemi kullanılır. Çözüm nümerik optimizasyon yöntemleriyle bulunabilir. 
+
+- Normallik varsayımı test edilebilir. Normal dağılım yerine başka dağılımlar da kullanılabilir (örneğin t dağılımı)
+
+- GARCH modelleri de varyansın negatif olmaması şartını sağlamayabilir. Ayrıca kaldıraç etkisini yakalayamaz. 
+
+- Alternatif modeller: EGARCH, GARCH-M, GJR, etc. 
+
+
+
+
+
+---
+name: gjr 
+
+# GJR modeli 
+
+- GJR modeli Glosten, Jaganathan ve Runkle (1993) tarafından önerilmiştir. Bu model GARCH modeline bir terim ekleyerek oynaklıktaki asimetrik etkileri yakalamaya çalışır: 
+$$\sigma_{t}^{2}=\alpha_{0}+\alpha_{1}~ u_{t-1}^{2}+\beta_1~ \sigma_{t-1}^{2}+\gamma~ u_{t-1}^{2} I_{t-1}$$
+
+Burada $I_{t-1}$ hatanın gecikmesinin negatif olduğu durumda 1 değerini alan bir kukla değişkendir: 
+$$I_{t-1}=\left\{
+  \begin{array}{ll}
+    1, & u_{t-1}<0\hbox{ ise;} \\
+    0, & \hbox{değilse.}
+  \end{array}
+\right.$$
+
+- Kaldıraç (leverage) etkisi varsa $\gamma$ parametresi pozitif ve istatistik bakımından anlamlı olur. 
+
+- Varyansın negatif olmaması için $\alpha_1+\beta_1\geq 0$ ve $\alpha_1\geq 0$ kısıtlarının sağlanması gerekir. 
+
+
+---
+name: egarch 
+
+# EGARCH modeli 
+
+- Nelson (1991) tarafından önerilen EGARCH modeli aşağıdaki gibi yazılabilir: 
+$$\log \left(\sigma_{t}^{2}\right)=\omega+\beta \log \left(\sigma_{t-1}{ }^{2}\right)+\gamma \frac{u_{t-1}}{\sqrt{\sigma_{t-1}{ }^{2}}}+\alpha\left[\frac{\left|u_{t-1}\right|}{\sqrt{\sigma_{t-1}{ }^{2}}}-\sqrt{\frac{2}{\pi}}\right]$$
+
+- Doğal logaritma alındığı için varyans her zaman pozitif olur. 
+
+- Veride kaldıraç etkisi varsa EGARCH modeli bunu yakalayabilir. 
+
+- Modelde $\gamma$ kaldıraç etkisinin varlığı durumunda negatif olacaktır. Bu durumda volatilite ile getiriler arasında ters yönlü bir ilişki vardır. 
+
+---
+name: garchm 
+
+# GARCH-in-mean 
+
+- Finansal piyasalarda riskin karşılığı olarak daha yüksek getiriler beklenir. Öyleyse riskin bir ölçüsü olan volatilitenin getiri denkleminde belirleyici olarak yer alması düşünülebilir. 
+
+- Lilien ve Robins (1987) tarafından önerilen ARCH-M modeline benzer şekilde bir GARCH-M modeli aşağıdaki gibi yazılabilir: 
+$$y_{t}=\mu+\delta \sigma_{t-1}+u_{t}, ~~~~u_{t} \sim \mathrm{N}\left(0, \sigma_{t}^{2}\right)$$
+
+$$\sigma_{t}^{2}=\alpha_{0}+\alpha_{1} u_{t-1}^{2}+\beta_1 \sigma_{t-1}^{2}$$
+
+- Modelde $\delta$ parametresi risk primi olarak düşünülebilir.
+
+
+---
+# Çok Değişkenli GARCH Modelleri 
+
+- Multivariate GARCH (ya da MGARCH) modelleri varlık getirilerinin varyansının yanı sıra bunların arasındaki kovaryansı da modelleme sürecine dahil eder. 
+
+- Yaygın olarak kullanılan MGARCH modelleri: VECH, diagonal VECH, BEKK, Dynamic Conditional Correlation (DCC) model
+
+- DCC modeli korelasyonların zamana bağlı olarak değişmesine olanak tanımaktadır. Böylece hangi dönemlerde varlık getirilerinin korelasyonunun arttığı veya azaldığı görülebilmektedir. 
+
+- Bu modellerin detayları için bkz. Brooks "Introductory Econometrics for Finance" ch. 9. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    

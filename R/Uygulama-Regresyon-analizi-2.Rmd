@@ -1,0 +1,560 @@
+---
+title: 'Uygulama: Çoklu Regresyon Analizi'
+author:
+  name: Prof. Dr. Hüseyin Taştan
+  affiliation: Yıldız Teknik Üniversitesi
+date: ""
+output:
+  html_document:
+    number_sections: yes
+    theme: readable
+    highlight: haddock
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+    keep_md: no
+  word_document:
+    toc: yes
+    toc_depth: '3'
+subtitle: Finansal Ekonometri (MPİ-TYL)
+---
+<style type="text/css"> 
+body{
+  font-size: 12pt;
+}
+code.r{
+  font-size: 12pt;
+}
+</style>
+
+```{r setup, include=FALSE}
+# knitr::opts_chunk$set(echo = TRUE, results = 'asis', fig.show = 'asis', fig.width = 3.5,                         fig.height = 3)
+knitr::opts_chunk$set(echo = TRUE)
+``` 
+
+# R'da çoklu regresyon modelinin tahmini 
+
+Popülasyon regresyon modeli aşağıdaki gibi yazılabilir: 
+$$y = \beta_0 + \beta_1 x_1 + \beta_2 x_2 + \ldots + \beta_k x_k + u$$
+
+Bu model R'da `lm()` fonksiyonu ile aşağıdaki syntax kullanılarak tahmin edilebilir: 
+```{r, echo=TRUE, eval=FALSE}
+lm(formula = y ~ x1 + x2 + ... + xk, data, ...)
+```
+veya
+```{r, echo=TRUE, eval=FALSE}
+lm(y ~ x1 + x2 + ... + xk, options)
+```
+
+Modele sabit terim otomatik olarak eklenir. Eğer modelden sabiti çıkarmak istersek:  
+```{r, echo=TRUE, eval=FALSE}
+lm(y ~ 0 + x1 + x2 + ... + xk, data, ...)
+```
+
+The  ` lm() ` command accepts several options regarding the specification. See the help 
+files. 
+
+As we've already seen many times, if you want the results to be stored and 
+displayed in a table format you can use 
+```{r, echo=TRUE, eval=FALSE}
+res <- lm(y ~ 0 + x1 + x2 + ... + xk, data, ...)
+summary(res)
+```
+
+
+## Örnek: öğrenci başarısı
+
+```{r, echo=TRUE}
+library(wooldridge)
+
+GPAres <- lm(colGPA ~ hsGPA + ACT, data = gpa1)
+
+summary(GPAres)
+```
+
+Örneklem regresyon fonksiyonu (SRF): (standart hatalar parantez içindedir) 
+\[
+ \widehat{colGPA} = \underset{(0.341)} {1.29} + \underset{(0.096)} {0.453}~ hsGPA + \underset{(0.011)} {0.0094}~ ACT
+ \]
+ $n=141$ öğrenci, $colGPA$: üniversite öğrencilerinin başarı notu (GPA, 4 üzerinden puan) , $hsGPA$: lise başarı notu, $ACT$: achievement test score (üniversiteye giriş sınavı sonucu).
+
+## Örnek: Ücret denklemi
+
+```{r, echo=TRUE} 
+summary( lm(log(wage) ~ educ+exper+tenure, data=wage1) )
+``` 
+
+## Örnek: yeni doğan bebeklerin sağlığı
+
+Veri seti: `bwght`, değişken tanımları için bkz. `?bwght`
+
+```{r} 
+bebek_agirlik_modeli <- lm(bwght ~  cigs + parity + faminc + motheduc + fatheduc, data=bwght)
+summary(bebek_agirlik_modeli)
+``` 
+Cigs katsayısının yorumu: hamilelik süresince günde içilen ortalama sigara sayısı bir artarsa yeni doğan bebek ağırlıkları ortalama yaklaşık 0.60 birim azalmaktadır (bebek ağırlığı ons cinsinden ölçülmüştür, bir ons = yaklaşık 30 gr.)
+
+
+# Hipotez testleri 
+
+## t testi: örnek 
+
+```{r, echo=TRUE, results="hold"}
+library(wooldridge)
+wagereg <- lm(log(wage) ~ educ + exper + tenure, data = wage1)
+summary(wagereg) 
+``` 
+
+Tecrübenin popülasyon katsayısının sıfır olduğunu söyleyen hipotezi test ediniz. Karşı hipotez pozitif olduğunu söylesin. Yani, 
+$$
+H_0: \beta_2 = 0
+$$
+$$
+H_1: \beta_2 > 0
+$$
+
+Regresyon çıktısında t istatistiği hesaplanmıştır, $t_{\hat{\beta}_2}=2.391=0.004/0.0017$. 
+
+Kritik değerler: t(522) yaklaşık olarak standart normal dağılıma sahiptir:    
+```{r, echo=TRUE}
+# CV for alpha=5% and 1% using the t distribution with 522 d.f.
+# Using the quantile function for t (qt)
+alpha <- c(0.05, 0.01)
+qt(1-alpha, 522)
+
+# Critical values for alpha=5% and 1% using the normal approximation:
+# Using the quantile function for normal distribution (qnorm)
+qnorm(1-alpha)
+``` 
+
+t istatistiği %1 düzeyindeki kritik değerden daha büyüktür: $t_{\hat{\beta}_2}=2.391>2.33$. Öyleyse %1 düzeyinde boş hipotez reddedilir.   
+
+R ile p-değerini bulalım: 
+```{r, echo=TRUE}
+pt(2.391,522, lower.tail = FALSE)
+# or 
+1-pt(2.391,522)
+``` 
+
+P-değeri<0.01 olduğu için boş hipotez %1 düzeyinde reddedilir.  
+
+## t testi: Campus Crime Model 
+```{r, echo=TRUE, results="hold"}
+( crimeres <- summary( lm(log(crime) ~ log(enroll), data=campus) ) )
+``` 
+
+Suçun okul büyüklüğüne göre esnekliğinin bir olduğunu test ediniz: 
+$$H_0: \beta_1 = 1$$
+Alternatif hipotez: 
+$$H_1: \beta_1>1$$
+T testi: 
+$$t =\frac{tahmin-hipotez}{standart~ hata}= \frac{1.2698-1}{0.1098}=2.46\sim t(95)$$
+% 1 düzeyindeki kritik değer: 
+```{r}
+qt(0.99, 95)
+```
+Hesaplanan t kritik değerden büyüktür, öyleyse boş hipotez red. 
+
+P değerini bulalım: 
+```{r}
+pt(2.46, 95, lower.tail = FALSE)
+```
+
+P değeri 0.01 değerinden küçüktür. Öyleyse % 1 anlamlılık düzeyinde boş hipotez red. Esneklik 1'en büyüktür. 
+
+
+## t testi: House prices 
+```{r}
+houseres <- lm(log(price) ~ log(nox)+log(dist)+rooms+stratio, data=hprice2)
+summary(houseres)
+``` 
+**Alıştırma**: log(nox) katsayısının -1 olduğunu söyleyen hipotezi iki taraflı alternatifle sınayınız. 
+
+
+# F test
+
+## Regresyonun bir bütün olarak istatistiksel anlamlılığı 
+Ev fiyatları modeli: 
+```{r}
+houseres <- lm(log(price) ~ log(nox)+log(dist)+rooms+stratio, data=hprice2)
+summary(houseres)
+``` 
+
+Modelin bir bütün olarak anlamlı olup olmadığına ilişkin F test istatistiği regresyon çıktısında verilmiştir: 
+$$F = 175.9\sim F(4, 501)$$
+Buna ilişkin p değeri oldukça küçüktür (p-value: < 2.2e-16). Öyleyse model bir bütün olarak istatistiksel bakımdan anlamlıdır. 
+
+
+## Dışlama kısıtları: örnek 
+
+Yeni doğan bebeklerin ağırlıklarında anne ve babanın eğitim düzeyinin birlikte anlamlı olup olmadığını test etmek istiyoruz. Önce kayıp gözlemleri silelim: 
+```{r, echo=TRUE, results="hold"} 
+data(bwght, package='wooldridge')
+# omit missing observations (many missing values in fatheduc)
+bwght <- na.omit(bwght)
+``` 
+
+Kısıtlanmamış model:   
+```{r, echo=TRUE, results="hold"} 
+unrest.bwght <- lm(bwght ~  cigs + parity + faminc + motheduc + fatheduc, data=bwght)
+summary(unrest.bwght)
+``` 
+
+Kısıtlanmış model (motheduc ve fatheduc dışlandı) 
+```{r, echo=TRUE, results="hold"} 
+rest.bwght <- lm(bwght ~  cigs + parity + faminc, data=bwght)
+summary(rest.bwght)
+``` 
+
+F test istatistiğini açıkça hesaplayalım: 
+```{r, echo=TRUE, results="asis"} 
+n <- length(unrest.bwght$residuals)
+k.unrest <- length(unrest.bwght$coefficients)-1
+k.rest <- length(rest.bwght$coefficients)-1
+q <- k.unrest - k.rest
+q
+USSR <- sum(unrest.bwght$residuals^2)
+RSSR <- sum(rest.bwght$residuals^2)
+F <- ((RSSR-USSR)/USSR) * (n - k.unrest - 1)/q
+F
+``` 
+
+Bağımlı değişken hem kısıtlanmamış hem de kısıtlanmış modelde aynı ise $R^2$ versiyonu da kullanılabilir:  
+```{r, echo=TRUE, results="asis"}
+# Unrestricted model's Rsquared
+URsq <- summary(unrest.bwght)$r.squared
+# Restricted model's Rsquared
+RRsq <- summary(rest.bwght)$r.squared
+# Compute the F statistic
+F <- ((URsq-RRsq)/(1-URsq)) * (n - k.unrest - 1)/q
+F
+``` 
+
+
+Karar kuralı: hesaplanan F test değeri F(q,n-k-1) kritik değerinden büyükse (verilmiş bir alpha düzeyinde) boş hipotez red. 
+
+%5 düzeyinde kritik değer: 
+```{r, echo=TRUE, results="asis"} 
+alpha <- 0.05
+Fcv05 <- qf(alpha, q, n-k.unrest-1, lower.tail = FALSE)
+Fcv05
+``` 
+
+Veya:
+```{r, echo=TRUE, results="asis"} 
+qf(1-alpha, q, n-k.unrest-1, lower.tail = TRUE)
+``` 
+
+$\alpha = 0.1$ düzeyinde kritik değer: 
+```{r, echo=TRUE, results="asis"} 
+qf(0.9, q, n-k.unrest-1)
+``` 
+
+Hesaplanan F istatistiği %10 düzeyindeki kritik değerden küçük olduğu için boş hipotez reddedilemez. motheduc ve fatheduc değişkenleri birlikte istatistik bakımından anlamsızdır. 
+
+P değerinin hesaplanması:  
+```{r, echo=TRUE, results="asis"} 
+# p-value 
+1-pf(F,q,n-k.unrest-1)
+``` 
+
+p-değeri=0.238>0.1 olduğu için $H_0$ reddedilmez. 
+
+
+### `linearHypothesis()` fonksiyonu ile F testi
+
+`linearHypothesis()` fonksiyonu `{car}` paketinin bir parçasıdır. Önceki örneğimiz için F istatistiğinin doğrudan hesaplanması: 
+```{r, echo=TRUE, results="hold"}
+# install.packages("car")
+library(car)
+linearHypothesis(unrest.bwght, c("motheduc=0","fatheduc=0"))
+``` 
+
+## Doğrusal kısıtlar: Ev değerlemeleri 
+
+Kısıtlanmamış model: 
+```{r, echo=TRUE, results="hold"}
+data(hprice1, package='wooldridge')
+# unrestricted regression
+unrest <- lm(lprice ~  lassess + llotsize + lsqrft + bdrms, data=hprice1)
+summary(unrest)
+anova(unrest)
+``` 
+lprice=log ev fiyatları, lassess=log ekspertiz değeri, ve eve ilişkin diğer değişkenler. 
+
+Kısıtlanmamış modelin SSR değerini saklayalım: 
+```{r, echo=TRUE, results="hold"}  
+SSRu <- sum(unrest$residuals^2)
+SSRu
+``` 
+
+Kısıtlanmış (Restricted) model: 
+```{r, echo=TRUE, results="hold"}  
+# restricted regression
+# define the new dependent variable 
+pricedif <- hprice1$lprice - hprice1$lassess
+rest <- lm(pricedif ~  1, data=hprice1) 
+anova(rest)
+# Restricted SSR 
+SSRr <- sum(resid(rest)^2)
+SSRr
+``` 
+
+F istatistiği:  
+```{r, echo=TRUE, results="asis"} 
+n <- nobs(unrest)
+k <- length(unrest$coefficients)-1
+q <- 4
+F <- ((SSRr-SSRu)/SSRu) * (n-k-1)/q
+F
+``` 
+
+
+Karar kuralı için kritik değer:  
+```{r, echo=TRUE, results="asis"} 
+alpha <- 0.05
+Fcv05 <- qf(alpha, q, n-k-1, lower.tail = FALSE)
+Fcv05
+``` 
+
+or
+```{r, echo=TRUE, results="asis"} 
+qf(1-alpha, q, n-k-1, lower.tail = TRUE)
+``` 
+
+P değeri:  
+```{r, echo=TRUE, results="asis"} 
+1-pf(F,q,n-k-1)
+``` 
+
+P değeri makül alpha değerlerinden daha büyüktür. Öyleyse boş hipotez kabul edilir. Ev değerlemeleri rasyoneldir.   
+
+`linearHypothesis()` ile otomatik hesaplama: 
+```{r, echo=TRUE, results="hold"} 
+linearHypothesis(unrest, c("lassess=1","llotsize=0","lsqrft=0","bdrms=0"))
+``` 
+
+
+# Kategorik değişkenler
+
+Ücret denklemi 
+```{r}
+wagereg1 <- lm(log(wage) ~ female + educ, data=wage1)
+summary(wagereg1)
+```
+
+Başka nicel değişkenler ekleyelim: 
+```{r}
+wagereg2 <- lm(log(wage) ~ female + educ + exper + tenure, data=wage1)
+summary(wagereg2)
+```
+
+Female kukla katsayısı negatif ve anlamlı. Educ, exper, tenure değişkenlerini dikkate aldıktan sonra da kadınlar ortalamada erkeklerden daha az kazanıyor. 
+
+
+# Karesel Model 
+
+## Örnek: ücret denklemi
+```{r}
+# scatter plot
+plot(wage1$exper, wage1$wage,
+     col = "steelblue",
+     pch = 20,
+     main = "Wage-Experience Relationship", 
+     cex.main = 1)
+```
+
+
+```{r}
+# scatter plot with quadratic fit
+# requires ggplot2
+library(ggplot2)
+ggplot(wage1, aes(x=exper, y=wage)) + geom_point()+stat_smooth(se=F,method='lm', formula=y~poly(x,2))
+```
+
+
+```{r}
+# OLS fit
+reswage <- lm(log(wage)~educ+exper+I(exper^2),data=wage1)
+summary(reswage)
+```
+
+Bir yıllık tecrübe artışının etkisi ( $\Delta exper = 1$ ): 
+
+$$\widehat{\Delta\log(wage)} = 0.041-(2\times 0.00071)exper=0.041-0.00142exper$$
+exper değerine bağlıdır. Hiç tecrübesi olmayan biri için exper=0 ve ücretler üzerindeki yüzde artış %4.1 olur. Bir yıllık tecrübesi olan biri için bu etki 0.041-0.00142=0.409 olur, yani yaklaşık %4.09. 
+
+Dönüm noktası: 
+$$exper^* = \frac{0.041}{0.00142}=28.87$$
+
+yaklışık 29 yıldır. 
+
+# Uygulama: Finansal varlık fiyatlama modeli 
+
+Finansal varlık fiyatlama modeli (capital assets pricing model, CAPM) bir hisse senedinin beklenen getirisini piyasa riski ile ilişkilendirir. 
+
+$$(R^A_t - R^f_t) = \beta_0 + \beta_1 (R^M_t - R^f_t) + u_t$$
+Burada $R^A_t$ A hisse senedinin $t$ zamanındaki (örneğin ay) getirisi, $R^M_t$ piyasa portföyü M için getiri oranı (endeks getiri oranı kullanılabilir, örneğin S&P-500 getirileri) ve $R^f_t$ risksiz getiri oranıdır (devlet tahvillerinin faiz oranı kullanılabilir). 
+
+Bu modelde $\beta_1$ finansal varlığın risk düzeyi hakkında bilgi içerir. $\beta_1=1$ ise orta düzey risk (piyasa portföy riski düzeyinde), $\beta_1>1$ yüksek sistematik risk ve beklenen getiri yüksek, $\beta_1<1$ düşük sistematik risk ve beklenen getiri düşük. 
+
+Örnek: 
+```{r}
+# CAPM application (data from Brooks text)
+
+library(tidyverse)
+library(lubridate)
+library(readxl)
+capm <- read_excel("Data/capm.xls")
+# yeni date değişkeni
+capm <- capm %>% 
+  mutate(date = lubridate::ymd(Date), 
+         month = lubridate::month(date))
+```
+
+
+```{r}
+# getiri oranlarını hesapla
+capm <- capm %>% 
+  mutate(r_SANDP = 100*(log(SANDP)-lag(log(SANDP), order_by = date)),
+         r_FORD = 100*(log(FORD)-lag(log(FORD), order_by = date)), 
+         r_GE = 100*(log(GE)-lag(log(GE), order_by = date)), 
+         r_MICROSOFT = 100*(log(MICROSOFT)-lag(log(MICROSOFT), order_by = date)), 
+         r_ORACLE = 100*(log(ORACLE)-lag(log(ORACLE), order_by = date))
+  )
+```
+
+
+```{r}
+# fazla getiri (excess return)
+capm <- capm %>% 
+  mutate(er_SANDP = r_SANDP - USTB3M/12, 
+         er_FORD = r_FORD - USTB3M/12,
+         er_GE = r_GE - USTB3M/12,
+         er_MICROSOFT = r_MICROSOFT - USTB3M/12,
+         er_ORACLE = r_ORACLE - USTB3M/12
+         )
+```
+
+
+```{r}
+# ts plot SP-500 ve FORD excess returns
+capm %>% 
+  ggplot() + 
+  geom_line(aes(date, er_SANDP, color = "er_SANDP")) + 
+  geom_line(aes(date, er_FORD, color = "er_FORD"))+
+  labs(color="", 
+       x = "", 
+       y = "Excess Returns, %")
+```
+
+
+```{r}
+# scatter plot    
+capm %>% 
+  ggplot(aes(er_SANDP, er_FORD)) + 
+  geom_point()
+```
+
+
+```{r}
+# regresyon 
+capm_reg1 <- lm(er_FORD ~ er_SANDP, data = capm)
+summary(capm_reg1)
+```
+
+Beta katsayısı 1.89 olarak tahmin edildi (istatistik bakımından anlamlı). 
+
+```{r}
+# scatter plot + regression line   
+capm %>% drop_na() %>% 
+  ggplot(aes(er_SANDP, er_FORD)) + 
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE) +
+  theme_classic()
+```
+
+
+**Alıştırma**: Bu modelde $H_0: \beta_1 = 1$ hipotezini test ediniz. 
+
+# Uygulama: Arbitraj fiyatlama modeli (APT)
+
+APT = Arbitrage-pricing theory
+
+CAPM finansal varlık getirisini piyasa portföy getirisi ile ilişkilendirir. APT ise finansal varlık getirisini sadece piyasa getirisi ile değil diğer tüm makroekonomik veya finansal değişkenlerle (risk kaynaklarıyla) ilişkilendirir. Bu değişkenler arasında enflasyon, sanayi üretimi, faiz oranları ve döviz kurlarındaki değişimler, vs. yer alabilir. Hisse senedi getirileri bu makro değişkenlerdeki beklenmeyen değişimlerle ilişkili olabilir. 
+
+```{r}
+# APT application (data from Brooks text)
+
+library(tidyverse)
+library(lubridate)
+library(readxl)
+macro <- read_excel("Data/macro.xls")
+
+macro <- macro %>% 
+  mutate(date = lubridate::ymd(Date), 
+         month = lubridate::month(date))
+# Değişken tanımları: 
+# BMINUSA: credit spread (difference in annualised average
+# yields between a portfolio of bonds rated AAA and a portfolio of bonds rated
+# BAA.)
+# CCREDIT: consumer credit 
+# INDPRO: industrial production index 
+# M1SUPPLY: M1 money supply 
+# CPI: consumer price index 
+# USTB10Y: 10 yıllık hazine bonosu faizi
+# USTB3M: 3 aylık hazine bonosu faizi
+# SANDP: S&P500 index 
+# MICROSOFT: hisse senedi fiyatı
+```
+
+
+```{r}
+# değişkenleri değişimler ya da büyüme oranlarına 
+# dönüştürelim:
+# Not: yatırımcılar naif beklentilere sahipse bir değişkendeki dönemden döneme 
+# değişim beklenmeyen bir değişim ya da sürpriz olarak yorumlanabilir
+macro <- macro %>% 
+  mutate(dspread = BMINUSA - lag(BMINUSA, order_by = date),
+         dcredit = CCREDIT - lag(CCREDIT, order_by = date), 
+         dprod = INDPRO - lag(INDPRO, order_by = date), 
+         dmoney = M1SUPPLY - lag(M1SUPPLY, order_by = date), 
+         inflation = 100*(log(CPI) - lag(log(CPI), order_by = date)), 
+         rterm = c(NA, diff(USTB10Y - USTB3M)), 
+         dinflation = (inflation - lag(inflation)), 
+         # SP500 returns
+         rsandp = 100*(log(SANDP)-lag(log(SANDP), order_by = date)),
+         # excess returns:
+         er_msoft = 100*(log(MICROSOFT)-lag(log(MICROSOFT))) - USTB3M/12, 
+         er_sandp = rsandp - USTB3M/12
+         )
+```
+
+
+```{r}
+# Microsoft getiri fazlasının S&P500 ve makro değişkenler üzerine regresyonu
+apt_reg1 = lm(er_msoft ~ er_sandp + dprod + dcredit + 
+                dinflation + dmoney + dspread + rterm, data = macro)
+summary(apt_reg1)
+```
+
+Hangi değişkenler istatistik bakımından anlamlıdır? Hangileri anlamsızdır? Modelin bir bütün olarak anlamlı olduğu söylenebilir mi? 
+
+Dışlama kısıtının testi: 
+```{r}
+library(car)
+linearHypothesis(apt_reg1, c("dprod=0","dcredit=0","dmoney=0","dspread=0"))
+```
+$$F = 0.4139\sim F(4,375)$$
+p-değeri = 0.7986, H0 kabul edilir. dprod, dcredit, dmoney ve dspread değişkenleri birlikte anlamsızdır. 
+
+Final model: 
+```{r} 
+apt_reg2 = lm(er_msoft ~ er_sandp + dinflation + rterm, data = macro)
+summary(apt_reg2)
+```
+
+
+
+
+<div class="tocify-extend-page" data-unique="tocify-extend-page" style="height: 0;"></div>

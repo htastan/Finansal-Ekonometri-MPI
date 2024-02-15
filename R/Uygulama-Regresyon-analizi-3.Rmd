@@ -1,0 +1,532 @@
+---
+title: 'Uygulama - Çoklu Regresyon Analizi: Ek konular'
+author:
+  name: Prof. Dr. Hüseyin Taştan
+  affiliation: Yıldız Teknik Üniversitesi
+date: ""
+output:
+  html_document:
+    number_sections: yes
+    theme: readable
+    highlight: haddock
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+    keep_md: no
+  word_document:
+    toc: yes
+    toc_depth: '3'
+subtitle: Finansal Ekonometri (MPİ-TYL)
+---
+<style type="text/css"> 
+body{
+  font-size: 12pt;
+}
+code.r{
+  font-size: 12pt;
+}
+</style>
+
+```{r setup, include=FALSE}
+# knitr::opts_chunk$set(echo = TRUE, results = 'asis', fig.show = 'asis', fig.width = 3.5,                         fig.height = 3)
+knitr::opts_chunk$set(echo = TRUE)
+``` 
+
+# Standartlaştırılmış Regresyon 
+
+## Örnek: Hava kirliliği ve ev fiyatları
+
+Bu veri setinde `{wooldridge}` paketindeki `hprice2` veri setini kullanacağız. 
+
+```{r}
+library(wooldridge)
+data("hprice2")
+str(hprice2)
+```
+
+Orijinal ölçü birimleriyle regresyon: 
+```{r}
+orj_model <- lm(price ~ nox + crime + rooms + dist + stratio, data=hprice2)
+summary(orj_model)
+``` 
+
+
+`R`'da regresyon sonuçlarını özetlemenin başka yolları da vardır. Örneğin {stargazer} paketi ile sonuçları tablo halinde özetleyebiliriz: 
+```{r warning=FALSE}
+library(stargazer)
+stargazer(orj_model, type = "text")
+```
+
+
+
+Modeli standartlaştırılmış formda yeniden tahmin etmek için `R`'daki `scale()` fonksiyonunu kullanabiliriz: 
+```{r}
+std_model <- lm(scale(price) ~ 0 + scale(nox) + scale(crime) + scale(rooms) + 
+                  scale(dist) + scale(stratio), data = hprice2)
+summary(std_model)
+``` 
+
+
+
+Modellerin açıklama güçlerinin (R-kare), katsayıların t istatistiklerinin, ve F istatistiklerinin aynı olduğuna dikkat ediniz. Modelin standardize formda tahmini açıklama gücünü ve istatistiksel çıkarsamayı etkilemez. Sadece katsayı yorumlarını değiştirir. 
+
+**Alıştırma**: İş merkezlerine uzaklık (dist) ve öğrenci/öğretmen oranı (stratio) katsayılarını yorumlayınız. 
+
+
+# Uyum iyiliği: Düzeltilmiş R-kare 
+
+Bağımlı değişkenin aynı olduğu ancak birbirlerinin özel hali olmayan modellerin açıklama güçlerinin karşılaştırılmasında düzeltilmiş R-kare kullanılabilir. 
+
+Örnek olarak aşağıdaki modelleri düşünüleim: 
+
+```{r}
+result1 <- lm(log(price) ~ nox, data = hprice2)
+summary(result1)
+# (result1)
+# summary(result1)$adj.r.squared
+```
+```{r}
+result2 <- lm(log(price) ~ log(nox), data = hprice2)
+summary(result2) 
+```
+
+İkinci modelin (log-log) düzeltilmiş R-kare değeri ilkine göre daha yüksektir. 
+
+```{r}
+result3 <- lm(log(price) ~ nox + I(nox^2), data = hprice2)
+summary(result3) 
+```
+
+```{r}
+stargazer(result2, result3, type = "text")
+```
+
+
+
+Karesel modelin düzeltilmiş R-kare değeri log-log modeline yakındır. 
+
+
+
+# Regresyon Analizinde Potansiyel Problemler 
+
+```{r}
+load("Data/besiktas_ev.RData")
+head(besiktas_ev)
+```
+
+
+Level-level modeli: 
+```{r}
+reg0 <- lm(fiyat ~ metrekare, data = besiktas_ev)
+summary(reg0)
+```
+
+
+```{r warning=FALSE}
+library(tidyverse)
+library(broom)
+# broom paketindeki augment() fonksiyonu kalıntıları ve fit edilen değerleri
+# oluşturur
+reg0_results <- augment(reg0)
+head(reg0_results)
+```
+
+
+```{r}
+reg0_results %>%
+  ggplot(mapping = aes(x = metrekare)) +
+  geom_point(mapping = aes(y = `fiyat`)) +
+  geom_line(mapping = aes(y = .fitted), color = "blue")
+```
+
+Kalıntıların ve fit değerlerinin çizimi: 
+```{r}
+reg0_results %>% 
+  ggplot(aes(x = .fitted, y = .resid)) + 
+  geom_point() +
+  geom_hline(yintercept = 0)
+```
+
+
+Kalıntılar 0 çevresinde rassal dağılmıyor. Belirgin bir şekilde $\hat{fiyat}$ artarken kalıntıların değerler de mutlak olarak artıyor (aralık genişliyor). Buna benzer örüntü genellikle doğrusal olmayan ilişkilerin varlığına veya değişen varyans problemine işaret edebilir. 
+
+Base R'daki plot fonksiyonu ile de diagnostik grafikleri otomatik olarak çizmek mümkündür: 
+```{r}
+par(mfrow=c(2,2))
+plot(reg0)
+```
+
+
+Bu grafikleri sırayla çizelim: 
+
+```{r}
+plot(reg0, which = 1)
+```
+
+* **Residuals vs Fitted**: Sol üstteki ilk grafikte daha önce çizdiğimiz residual-fitted serpilme çizimini görüyoruz. Doğrusal olmayan ilişkilerin varlığına işaret ediyordu. 
+
+
+```{r}
+plot(reg0, which = 2)
+```
+
+
+
+* **Normal Q-Q**: İkinci grafik normal dağılımdan sapmaları gösteren Q-Q grafiğidir. Standardize edilmiş kalıntılar eğer normal dağılırsa aşağı yukarı kesikli çizgi ile çakışmalıdır.  Ancak özellikle kuyruklarda normallikten bazı sapmaların olduğunu görüyoruz. Daha fazla kanıt için normallik testleri yapılabilir.
+
+
+```{r}
+plot(reg0, which = 3)
+```
+
+
+
+* **Scale-Location**: Üçüncü grafik (alt sol) kalıntı ve fit değerlerinin scale-location grafiğini görüyoruz. Dikey eksende standardize edilmiş kalıntıların mutlak değerinin kare kökü yer alıyor. Yine bu grafikte de sıfır çevresinde rassal bir dağılım bekliyoruz. Eğer belirgin bir örüntü varsa bu kalıntıların varyansının sabit olmadığına işaret eder (heteroskedasticity). Ancak bu grafiğin yorumunu fonksiyon kalıbını doğru bir şekilde seçtiğimizden emin olarak yapmalıyız. 
+
+
+```{r}
+plot(reg0, which = 5)
+```
+
+
+* **Residual vs Leverage**: Dördüncü (alt sağ) grafik yüksek etkili gözlemlerin (influential observations - high leverage) saptanmasında kullanılabilir. Bu gözlemler regresyonu önemli ölçüde etkileyen uç değerlerdir. Grafikte kırmızı kesitli çizgi ile Cook's distance değerleri gösterilmiştir. Bu kırmızı kesikli çizginin dışına düşen değerler yüksek etkili gözlemler olarak düşünülebilir. Cook's D istatistiği  Grafiğe göre yüksek etkili gözlem yoktur (cut-off değeri 0.5). 
+
+```{r}
+plot(reg0, which = 4)
+```
+
+
+```{r}
+# 0.1'den daha büyük Cook's D değeri hangi gözlem:
+besiktas_ev[which(cooks.distance(reg0)>0.1),]
+```
+
+
+
+Modeli log-level formunda tahmin edelim: 
+
+```{r}
+reg1 <- lm(log(fiyat) ~ metrekare, data = besiktas_ev)
+summary(reg1)
+```
+```{r}
+broom::augment(reg1) %>%
+  ggplot(mapping = aes(x = metrekare)) +
+  geom_point(mapping = aes(y = `log(fiyat)`)) +
+  geom_line(mapping = aes(y = .fitted), color = "blue")
+```
+
+Kalıntıların ve fit değerlerinin çizimi: 
+```{r}
+broom::augment(reg1)  %>% 
+  mutate(resid = `log(fiyat)` - `.fitted`) %>% 
+  ggplot(aes(x = .fitted, y = resid)) + 
+  geom_point() +
+  geom_hline(yintercept = 0)
+```
+
+Kalıntılar ile tahmin değerleri arasında önce artan sonra azalan bir ilişki var. Orijin çevresinde rassal dağılmıyor. 
+
+```{r}
+par(mfrow=c(2,2))
+plot(reg1)
+```
+
+
+Modele karesel terim ekleyelim: 
+```{r}
+reg2 <- lm(log(fiyat) ~ metrekare + I(metrekare^2), data = besiktas_ev)
+summary(reg2)
+```
+
+```{r}
+par(mfrow=c(2,2))
+plot(reg2)
+```
+
+
+
+**Örnek**: Simülasyonla bir veri seti türeterek regresyon modeli tahmin edelim ve tanısal grafikleri çizelim. 
+```{r}
+set.seed(1) # aynı sonuçları elde etmek için 
+n   <- 200
+x1  <- rnorm(n, mean=0, sd=1) 
+y   <- 1 + 2*x1 + rnorm(n, mean=0, sd=1)  # popülasyon regresyon modeli biliniyor
+df1 <- tibble(id=1:n, y, x1)
+reg_df1 <- lm(y ~ x1, data = df1)
+# diagnostic plots
+par(mfrow=c(2,2))
+plot(reg_df1)
+```
+
+`ggplot` ile alternatif tanısal grafikler: 
+```{r}
+# lindia paketi yüklenmeli 
+library(lindia)
+reg_df1 %>% gg_diagnose(plot.all=TRUE)
+```
+
+
+Residuals-vs-fitted plot: 
+```{r}
+gg_resfitted(reg_df1)
+```
+
+
+**Örnek**: Yüksek etkili gözlemler
+```{r}
+library(wooldridge)
+data("rdchem")
+# R&D harcamalarının satış ve karlılık üzerine regresyonu
+# 
+plot(lm(rdintens ~ sales + profmarg, data = rdchem), 5)
+```
+
+10 numaralı gözlem yüksek etkilidir. Bazı durumlarda log almak bu etkiyi azaltabilir. Örneğin: 
+```{r} 
+# R&D harcamalarının satış ve karlılık üzerine regresyonu
+# log-log kalıbı, 
+plot(lm(log(rdintens) ~ log(sales) + profmarg, data = rdchem), 5)
+```
+
+
+
+# Kestirim 
+
+OLS ile regresyon modelini tahmin ettikten sonra kestirim yapmak istediğimiz x değerlerini yerine koyarak tahmin değerini hesaplayabiliriz.  
+
+## Nokta kestirimi
+
+`R`'da `lm()` fonksiyonu ile regresyon nesnesini oluşturduktan sonra `predict()` fonksiyonunu kullanarak kestirim değerlerini ve standart hatalarını hesaplayabiliriz. Örneğin üniversite öğrencilerinin başarısına ilişkin aşağıdaki modeli düşünelim.
+
+```{r}
+data(gpa2, package='wooldridge')
+# değişken tanımları için bkz. ?gpa2
+# Modelin tahmin edilmesi:
+gpa_reg <- lm(colgpa ~ sat + hsperc + hsize + I(hsize^2), data = gpa2)
+summary(gpa_reg)
+```
+
+
+```{r}
+# Spesifik x değerlerinin yer aldığı bir data.frame oluşturulması
+cvalues <- data.frame(sat = 1200, hsperc=30, hsize=5)
+cvalues
+```
+
+
+```{r}
+# Kestirim değeri
+predict(gpa_reg, cvalues)
+```
+
+
+```{r}
+# % 95 güven aralığı
+predict(gpa_reg, cvalues, interval = "confidence")
+```
+
+Farklı x değerleri tanımlayalım: 
+```{r}
+# Define three sets of regressor variables
+cvalues <- data.frame(sat = c(1200, 900, 1400), 
+                      hsperc = c(30, 20, 5), 
+                      hsize = c(5, 3, 1)
+                      )
+cvalues
+```
+
+
+```{r}
+# Point estimates and 99% confidence intervals for these
+predict(gpa_reg, cvalues, interval = "confidence", level=0.99)
+```
+
+## Aralık kestirimi 
+
+Güven aralığı bağımlı değişkenin beklenen değerinin tahminine (kestirimi) ilişkin belirsizliği yansıtır. Eğer spesifik bir bireyin üniversitedeki not ortalamasını (GPA) tahmin etmek istersek bu bireye ilişkin belirsizliği yansıtan hata terimini de dikkate almalıyız. R'da `predict()` fonksiyonunda yer alan opsiyonları kullanarak bu kestirimlere ilişkin standart hataları hesaplayabiliriz. Bir gözlem için kestirim yapmak istiyorsak __interval="prediction"__ opsiyonunu, ortalama için kestirim yapmak istiyorsak __interval="confidence"__ opsiyonunu kullanabiliriz.
+
+```{r}
+# nokta kestirimleri ve %95 güven aralığı
+predict(gpa_reg, cvalues, interval = "prediction")
+```
+
+Bireysel kestirimlerin güven aralığı çok daha geniştir. Bunun nedeni standart hata hesaplanmasında $\sigma$'nın da dikkate alınmasıdır. 
+
+```{r}
+# Ortalama için kestirimler
+predict(gpa_reg, cvalues, interval = "confidence")
+```
+
+
+Pratikte kestirimler oluşturulurken verilerde yer almayan değerlerin kullanılmasından kaçınmak gerekir. 
+
+
+# Regresyon Problemleri ve Makine Öğrenmesi 
+
+## Geçerleme Kümesi Yaklaşımı 
+
+`auto` veri kümesinden hareketle aşağıdaki modeli tahmin etmek istiyoruz: 
+$$mpg = \beta_0 + \beta_1 horsepower + \epsilon$$
+
+Eğitim veri kümesini rassal olarak belirliyoruz: 
+```{r, warning=FALSE}
+library(ISLR)
+# rassal sayı üretecinin başlangıç değeri: 
+set.seed(1)
+# eğitim verileri (gözlem numaraları) 
+# sample() ile n=392 içinden yerine koymadan 196 sayı çekiyoruz: 
+train <- sample(392, 196)
+```
+
+
+```{r}
+# modeli sadece eğitim verileriyle tahmin et: 
+lmfit <- lm(mpg ~ horsepower, 
+            data = Auto, 
+            subset = train # bu alt kümeyi kullan
+            )
+lmfit
+```
+
+Modelimizi `lmfit` nesnesine kaydettik. Şimdi sadece test verileriyle kestirimleri oluşturalım: 
+
+```{r}
+# eğitim ve test verilerini oluştur
+train_auto <- Auto[train,]
+test_auto <- Auto[-train,]
+```
+
+
+```{r}
+# eğitim verilerindeki kestirim
+train_predict <- predict(lmfit, train_auto)
+# Test veri setinde kestirimleri hesapla 
+test_predict <- predict(lmfit, test_auto)
+```
+
+
+```{r}
+# Test kestirim hatasını hesapla
+test_error <- test_auto$mpg - test_predict
+# Ortalama hata karesi (MSE)
+mean(test_error^2)
+#
+# sadece tek satırda yapmak istersek: 
+# mean((Auto$mpg-predict(lmfit,Auto))[-train]^2)
+```
+
+Alternatif olarak karesel ve kübik modelleri düşünelim: 
+$$mpg = \beta_0 + \beta_1 horsepower+ \beta_2 horsepower^2 + \epsilon$$
+
+
+$$mpg = \beta_0 + \beta_1 horsepower+ \beta_2 horsepower^2 + \beta_3 horsepower^3+ \epsilon$$
+
+
+Karesel model için MSE: 
+```{r}
+lm.fit2 <- lm(mpg ~ poly(horsepower,2), data = Auto, subset = train)
+mean((Auto$mpg-predict(lm.fit2,Auto))[-train]^2)
+```
+
+Kübik model için MSE: 
+```{r}
+lm.fit3 <- lm(mpg ~ poly(horsepower,3), data = Auto, subset = train)
+mean((Auto$mpg-predict(lm.fit3,Auto))[-train]^2)
+```
+
+Bu sonuçlara göre en düşük test kestirim hatasını veren model karesel modeldir. Acaba sonuçlar geçerleme kümesine ne kadar duyarlı? 
+
+
+Yeni bir geçerleme veri kümesi oluşturup test MSE hesaplayalım: 
+```{r}
+set.seed(2)
+train <- sample(392, 196)
+lm.fit <- lm(mpg ~ horsepower, data = Auto, subset = train)
+mean((Auto$mpg-predict(lm.fit,Auto))[-train]^2)
+```
+
+Karesel model: 
+```{r}
+lm.fit2 <- lm(mpg ~ poly(horsepower,2), data = Auto, subset = train)
+mean((Auto$mpg-predict(lm.fit2,Auto))[-train]^2)
+```
+
+Kübik model: 
+```{r}
+lm.fit3 <- lm(mpg ~ poly(horsepower,3), data = Auto, subset = train)
+mean((Auto$mpg-predict(lm.fit3,Auto))[-train]^2)
+```
+
+## Biri-Hariç Çapraz Geçerleme (LOOCV)
+
+Biri-hariç çapraz geçerlemede (LOOCV - Leave-one-out Cross Validation) modeli bir gözlemi dışarıda bırakarak tahmin ediyoruz. Dışarıda bırakılan gözlemi kestirim yapmak için kullanıyoruz. Bunun için `boot` paketindeki `cv.glm()` fonksiyonunu `glm()` ile birlikte kullanabiliriz. 
+
+`glm()` fonksiyonu `lm()`'e benzer:  
+```{r}
+# modeli glm ile tahmin et: 
+glm.fit <- glm(mpg ~ horsepower, data = Auto)
+coef(glm.fit)
+# lm ile tahmin: 
+lm.fit <- lm(mpg ~ horsepower, data = Auto)
+coef(lm.fit)
+```
+
+`cv.glm()` fonksiyonunun kullanımı:
+```{r}
+library(boot)
+glm.fit <- glm(mpg ~ horsepower, data = Auto)
+cv.err <- cv.glm(Auto, glm.fit)
+cv.err$delta
+```
+
+`cv.err$delta` çapraz geçerleme ortalama hatasını vermektedir (ilk değer LOOCV kestirim hatası, ikinci değer ise düzeltilmiş kestirim hatasıdır). `cv.glm()` default olarak LOOCV uygular. K-katlı çapraz geçerleme için de kullanılabilir. 
+
+
+LOOCV yaklaşımını biraz daha karmaşık modellere uygulayalım ve sonuçları karşılaştıralım. Beşinci dereceye kadar polinom modeller tahmin edeceğiz. Bunu bir döngü içinde yapmak daha pratiktir: 
+```{r}
+# 5 elemanlı sıfır vektörü; döngü içinde güncellenecek
+cv.error <- rep(0,5)
+#
+for (i in 1:5){
+  glm.fit <- glm(mpg ~ poly(horsepower,i), data = Auto)
+  cv.error[i] <- cv.glm(Auto, glm.fit)$delta[1]
+}
+cv.error
+```
+
+```{r}
+plot(cv.error, type = "b")
+```
+
+
+## $k$-katlı Çapraz Geçerleme
+
+Bunun için `cv.glm()` fonksiyonunu kullanabiliriz. Örneğin, $k=10$ için doğrusal modelde çapraz geçerleme test hatası: 
+```{r}
+set.seed(12345)
+glm.fit <- glm(mpg ~ horsepower, data = Auto)
+cv_lin_error_10 <- cv.glm(Auto, glm.fit, K=10)$delta[1]
+cv_lin_error_10
+```
+
+5. dereceye kadar polinom değerler için 10-katlı çapraz geçerleme test hata tahminleri: 
+```{r}
+# aynı sonuçlar için seed değeri: 
+set.seed(17)
+cv.error.10 <- rep(0,5)
+for (i in 1:5){
+  glm.fit <- glm(mpg ~ poly(horsepower,i), data = Auto)
+  cv.error.10[i] <- cv.glm(Auto, glm.fit, K=10)$delta[1]
+}
+cv.error.10
+```
+
+```{r}
+plot(cv.error.10, type = "b")
+```
+
+
+
+
+<div class="tocify-extend-page" data-unique="tocify-extend-page" style="height: 0;"></div>

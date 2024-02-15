@@ -1,0 +1,525 @@
+---
+title: 'Uygulama: Basit Regresyon Analizi'
+author:
+  name: Prof. Dr. Hüseyin Taştan
+  affiliation: Yıldız Teknik Üniversitesi
+date: ""
+output:
+  html_document:
+    number_sections: yes
+    theme: readable
+    highlight: haddock
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+    keep_md: no
+  word_document:
+    toc: yes
+    toc_depth: '3'
+subtitle: Finansal Ekonometri (MPİ-TYL)
+---
+<style type="text/css"> 
+body{
+  font-size: 12pt;
+}
+code.r{
+  font-size: 12pt;
+}
+</style>
+
+```{r setup, include=FALSE}
+# knitr::opts_chunk$set(echo = TRUE, results = 'asis', fig.show = 'asis', fig.width = 3.5,                         fig.height = 3)
+knitr::opts_chunk$set(echo = TRUE)
+``` 
+
+
+# Örnek: CEO maaşları ve karlılık
+
+```{r, echo=TRUE}
+library(wooldridge)
+data(ceosal1)
+# View(ceosal1)
+```
+
+
+`ceosal1` veri setinde yer alan CEO maaşları `salary` değişkeninin karlılık `roe` üzerine basit regresyonunu kuralım:  
+$$salary = \beta_0 + \beta_1 roe + u$$ 
+
+Değişken tanımlar:       
+**salary**: yıllık CEO maaşları (1000 US$), **roe**: Son üç yıldaki ortalama sermaye başına getiri oranı. 
+
+Regresyon modelini tahmin etmek için R'daki `lm()` fonksiyonunu kullanabiliriz:  
+```{r}
+library(wooldridge)
+lm(salary ~ roe, data = ceosal1)
+``` 
+
+
+Tahmin sonuçları denklem formunda aşağıdaki gibi yazılabilir:   
+$$\widehat{salary} = 963.191 + 18.501 roe$$ 
+
+Alternatif olarak: 
+$$
+    salary = 963.191 + 18.501 roe + \hat{u}
+$$ 
+
+Burada $\hat{u}$ kalıntı (residual) terimidir. Burada  
+$$
+salary = \widehat{salary} + \widehat{u} 
+$$ 
+olduğuna dikkat ediniz. 
+
+**Eğim katsayısının yorumu:** Getiri oranındaki yüzde 1 puanlık bir artışa karşılık ( $\Delta roe = 1$ ) CEO yıllık maaşlarında ceteris paribus ortalama 18.501 birim (1000 USD) artış tahmin edilmiştir: 
+$$\Delta salary = 18.501 \Delta roe = 18.501,~~~\Delta roe=1$$
+
+Derste gördüğümüz basit regresyon formüllerini kullanarak da katsayı tahminlerini bulabiliriz.  
+```{r, echo=TRUE}
+attach(ceosal1)
+# intermediate computations 
+cov(roe,salary)
+var(roe)
+mean(salary)
+mean(roe)
+
+# manual calculation of OLS coefficients 
+( b1hat <- cov(roe,salary)/var(roe) )
+( b0hat <- mean(salary) - b1hat*mean(roe) )
+detach(ceosal1)
+``` 
+ 
+
+`lm()` fonksiyonunun çıktısı bir listedir:  
+```{r, echo=TRUE, results="hold"}
+results1 <- lm(salary ~ roe, data = ceosal1)
+# View(results1)
+summary(results1) 
+``` 
+
+`results1` listesinde katsayı tahminleri, kalıntılar, y için kestirim değerleri, vs. bulunmaktadır.  
+
+Verilerin ve regresyon doğrusunun görselleştirilmesi: 
+```{r, echo=TRUE}
+attach(ceosal1)
+plot(roe, salary, 
+     ylim = c(0,4000),
+     col = "steelblue",
+     pch = 20,
+     main = "Regression of salary on roe", 
+     cex.main = 1)
+abline(results1, 
+       col = "red", 
+       lwd = 2)
+``` 
+
+Gözlenen ve tahmin edilen y değerleri ve kalıntılar:  
+```{r, echo=TRUE, results='hold'}
+salaryhat <- fitted(results1)
+uhat <- resid(results1)
+table2.2 <- cbind(roe, salary, salaryhat, uhat)
+head(table2.2,n=15)
+``` 
+
+# OLS tahmincilerinin cebirsel özellikleri
+
+ 
+
+1. Kalıntıların toplamı ve ortalaması her zaman sıfırdır: 
+```{r, echo=TRUE}
+sum(results1$residuals)
+mean(results1$residuals)
+``` 
+
+2. $x$ ile kalıntılar arasındak örneklem kovaryansı sıfırdır: 
+```{r, echo=TRUE}
+sum(results1$residuals*ceosal1$roe)
+cov(results1$residuals, ceosal1$roe)
+``` 
+
+3.  $(\bar{x},\bar{y})$ noktası her zaman regresyon doğrusu üzerindedir:
+```{r, echo=TRUE}
+roemean <- mean(ceosal1$roe)
+salarymean <- mean(ceosal1$salary)
+salarymean
+salaryhatmean <- b0hat + b1hat*roemean
+salaryhatmean
+``` 
+
+4. Kestirim değerlerinin ortalaması gözlenen değerlerin ortalamasına eşittir: $\bar{y}=\bar{\hat{y}}$
+```{r, echo=TRUE}
+mean(results1$fitted.values)
+mean(ceosal1$salary)
+``` 
+
+$R^2$'nin üç farklı yolla hesaplanması:  
+```{r, echo=TRUE}
+data(ceosal1, package='wooldridge')
+
+CEOregres <- lm( salary ~ roe, data=ceosal1 )
+
+# Calculate predicted values & residuals:
+sal.hat <- fitted(CEOregres)
+u.hat <- resid(CEOregres)
+
+# Calculate R^2 in three different ways:
+sal <- ceosal1$salary
+var(sal.hat) / var(sal)
+1 - var(u.hat) / var(sal)
+cor(sal, sal.hat)^2
+``` 
+
+
+# Örnek: GPA regresyonu
+
+```{r, echo=TRUE, results="hold"} 
+gpareg <- lm(formula = colGPA ~ hsGPA, data = gpa1)
+summary(gpareg)
+``` 
+
+R-kare:
+```{r, echo=TRUE} 
+# ratio of the variance of fitted values to the variance of x
+colGPAhat <- fitted(gpareg)
+var(colGPAhat)/var(gpa1$colGPA)
+# or
+cor(colGPAhat, gpa1$colGPA)^2
+``` 
+
+**Alıştırma**: Örneklem regresyon fonksiyonunu denklem formunda yazınız ve eğim katsayısını yorumlayınız. Serpilme grafiği ile regresyon doğrusunu aynı grafikte çiziniz.  
+
+
+# Örnek: Ücret denklemi 
+```{r, echo=TRUE}
+data(wage1, package='wooldridge')
+
+# OLS regression:
+WAGEregres <- lm(wage ~ educ, data=wage1)
+
+# obtain coefficients, predicted values and residuals
+b.hat <- coef(WAGEregres)
+wage.hat <- fitted(WAGEregres)
+u.hat <- resid(WAGEregres)
+
+# Algebraic property (1):
+mean(u.hat)
+
+# Algebraic property (2):
+cor(wage1$educ , u.hat)
+
+#Algebraic property (3):
+mean(wage1$wage)
+b.hat[1] + b.hat[2] * mean(wage1$educ)
+``` 
+
+Regresyon çıktısı:  
+```{r, echo=TRUE, results="hold"} 
+summary(WAGEregres)
+``` 
+
+**Alıştırma**: Örneklem regresyon fonksiyonunu denklem formunda yazınız ve katsayıları yorumlayınız. $R^2$'yi yorumlayınız.  
+**Cevap**: Regresyon çözümünü denklem formunda yazalım: 
+$$\widehat{wage} = -0.905 + 0.541educ$$
+**Yorum**: Sabit terim $-0.905$ olarak tahmin edilmiştir. Bu eğitim düzeyi 0 olduğunda modelin tahmin ettiği ortalama saat başına ücret düzeyini göstermektedir. Verilerde çalışanların eğitim düzeyi bu düzeyden yüksektir. Bu nedenle negatif işaretli çıkmasının iktisadi bir anlamı yoktur. 
+**Yorum:** Eğim katsayısı 0.541 olarak tahmin edilmiştir. Buna göre eğitim düzeyi bir birim artarsa saat başına ortalama ücretlerde ceteris paribus 0.541 birim, yani USD, artış tahmin edilmektedir. 
+
+
+
+# Verilerin görselleştirilmesinin önemi
+
+```{r}
+library(datasets)
+anscombe
+```
+
+
+Bu veri setinde "Anscombe's Quartet" isimli yapay verileri yer almaktadır. (bkz F.J. Anscombe, 1973, Graphs in Statistical Analysis, The American Statistician, vol.27, No.1, pp.17-21, [click here for pdf version](http://www.jstor.com/stable/2682899)). 
+
+Bu veri setinde dört $x,y$ çifti yer almaktadır. $y$ bağımlı değişkeni, $x$ açıklayıcı değişkeni ifade etmektedir. 
+
+Serpilme çizimlerini oluşturalım: 
+
+```{r, warning=FALSE}
+library(ggplot2)
+plot1 <- ggplot(anscombe) +
+  geom_point(aes(x1, y1)) +
+  labs(x="x1", y="y1", title="Dataset 1") +
+  theme_classic()
+plot1 
+```
+
+```{r} 
+plot2 <- ggplot(anscombe) +
+  geom_point(aes(x2, y2)) +
+  labs(x="x2", y="y2", title="Dataset 2") +
+  theme_classic()
+plot2 
+```
+```{r} 
+plot3 <- ggplot(anscombe) +
+  geom_point(aes(x3, y3)) +
+  labs(x="x3", y="y3", title="Dataset 3") +
+  theme_classic()
+plot3 
+```
+
+
+```{r} 
+plot4 <- ggplot(anscombe) +
+  geom_point(aes(x4, y4)) +
+  labs(x="x4", y="y4", title="Dataset 4") +
+  theme_classic()
+plot4 
+```
+
+Bu grafikleri birleştirelim: 
+
+```{r, warning=FALSE}
+library(grid)
+library(gridExtra)
+grid.arrange(grobs=list(plot1, plot2, plot3, plot4), 
+             ncol=2, top="Anscombe's Quartet")
+```
+
+OLS tahmin sonuçları: 
+```{r}
+reg1 <- lm(y1 ~ x1, data = anscombe)
+reg1
+reg2 <- lm(y2 ~ x2, data = anscombe)
+reg2
+reg3 <- lm(y3 ~ x3, data = anscombe)
+reg3
+reg4 <- lm(y4 ~ x4, data = anscombe)
+reg4
+```
+
+Çözümlerin aynı olduğuna dikkat ediniz: 
+$$
+    \widehat{y} = 3.00 + 0.5~x
+$$
+
+Fit edilen regresyon doğruları ile veri grafiklerini birleştirelim: 
+```{r}
+fplot1 <- plot1 + geom_abline(intercept = reg1$coefficients[1], 
+                              slope = reg1$coefficients[2], color = "red")
+fplot1
+```
+
+```{r}
+fplot2 <- plot2 + geom_abline(intercept = reg2$coefficients[1], 
+                              slope = reg2$coefficients[2], color = "red")
+fplot2
+```
+```{r}
+fplot3 <- plot3 + geom_abline(intercept = reg3$coefficients[1], 
+                              slope = reg3$coefficients[2], color = "red")
+fplot3
+```
+
+```{r}
+fplot4 <- plot4 + geom_abline(intercept = reg4$coefficients[1], 
+                              slope = reg4$coefficients[2], color = "red")
+fplot4
+```
+
+
+Hepsi birlikte: 
+```{r, warning=FALSE}
+library(grid)
+library(gridExtra)
+grid.arrange(grobs=list(fplot1, fplot2, fplot3, fplot4), 
+             ncol=2, top="Anscombe's Quartet")
+```
+
+
+Bazı yorumları: 
+
+Dataset1: Regresyon doğrusu veri noktalarına iyi bir uyum sağlamaktadır. OLS regresyonunun uygun olduğu söylenebilir.  
+
+Dataset2: Serpilme çizimine göre değişkenler arasında doğrusal olmayan (karesel) bir ilişki mevcuttur. OLS regresyonu uygun değildir.  
+
+Dataset3: Serpilme çizimine göre bir ekstrem değer mevcuttur. Bu nokta dışlanırsa aşağı yukarı doğrusal bir ilişki vardır.   
+
+Dataset4: Bu veri kümesinde tüm $x$ değerleri, biri dışında, aynı değere sahiptir. Eğer bu ayrık değer dışlanırsa verilerde değişkenlik kalmaz (varyans sıfır olur). Bu durumda model çözülemez.  
+
+
+**Alıştırma:** Anscombe's quartet verileri için kalıntıları hesaplayınız ve $x$ değişkenine göre serpilme çizimlerini oluşturunuz.  
+
+
+# Örnek: Ücret-eğitim modeli (log-level)
+```{r, echo=TRUE}
+library(wooldridge)
+data(wage1)
+```
+
+Logaritmik ücretlerin (wage) eğitim düzeyi (educ) üzerine regresyonu: 
+
+$$log(wage) = \beta_0 + \beta_1 educ + u$$
+ 
+```{r wagereg1, echo=TRUE, results="hold"}
+wagereg <- lm(log(wage) ~ educ, data = wage1)
+# View(wagereg)
+summary(wagereg) 
+``` 
+
+Denklem formunda yazalım: 
+$$\widehat{log(wage)} = 0.584 + 0.083 educ$$
+
+**Eğim katsayısının yorumu**: Eğitim düzeyi bir yıl artarsa ortalama saat başına ücretlerin yaklaşık yüzde 8.3 artacağı tahmin edilmiştir. Yani, 
+$$\Delta\widehat{\log(wage)} = 0.083\Delta educ$$
+Her iki tarafı 100 ile çarparak yüzde ile ifade edebiliriz: 
+$$\%\Delta wage\approx \% 8.3,~~~\Delta educ = 1$$
+
+Eğitim düzeyi 4 yıl artarsa tahmin edilen ücret artışı ortalama $\% (4\times8.3) = \% 33.2$ olur. 
+
+
+
+Grafiksel gösterim:  
+```{r wagereg2, echo=TRUE}
+plot(wage1$educ, wage1$lwage,
+     col = "steelblue",
+     pch = 20,
+     main = "Log-level Regression Fit", 
+     cex.main = 1)
+abline(wagereg, 
+       col = "red", 
+       lwd = 2)
+``` 
+
+
+Level-level regresyonu ile karşılaştıralım: 
+```{r wagereg3, warning=FALSE}
+wagereg2 <- lm(wage ~ educ, data = wage1)
+# View(wagereg2)
+summary(wagereg2) 
+plot(wage1$educ, wage1$wage,
+     col = "steelblue",
+     pch = 20,
+     main = "Level-level Regression Fit", 
+     cex.main = 1)
+abline(wagereg2, 
+       col = "red", 
+       lwd = 2)
+``` 
+
+
+# Örnek: Test sonuçları ve bölgesel gelir (Level-log )
+
+## Level-level
+
+Level-level modeli (orijinal ölçümlerle): 
+
+$$Test~ Score = \beta_0 + \beta_1 Income + u$$
+ 
+Değişken tanımları:     
+Test score: o bölgedeki ortalama test puanı; Income: o bölgedeki gelir düzeyi (1000 US$). 
+
+```{r testscore1, warning=FALSE}
+# Install the AER package if you haven't done so. 
+# install.packages("AER")
+library(AER)                                                     
+data(CASchools)
+# prepare variables
+CASchools$size <- CASchools$students/CASchools$teachers
+CASchools$score <- (CASchools$read + CASchools$math) / 2       
+
+# fit a level-level model 
+linear_model<- lm(score ~ income, data = CASchools)
+summary(linear_model)
+
+# plot the observations
+plot(CASchools$income, CASchools$score,
+     col = "steelblue",
+     pch = 20,
+     xlab = "District Income (thousands of dollars)", 
+     ylab = "Test Score",
+     cex.main = 0.9,
+     main = "Test Score vs. District Income", 
+     cex.main = 1)
+
+# add the regression line to the plot
+abline(linear_model, 
+       col = "red", 
+       lwd = 2)
+``` 
+
+**Alıştırma**: Örneklem regresyon fonksiyonunu denklem formunda yazınız ve sonuçları yorumlayınız.  
+
+## level-log modeli  
+
+Model: 
+```{r testscore2, echo=TRUE}
+LevelLog_model <- lm(score ~ log(income), data = CASchools)
+
+# draw a scatterplot
+plot(score ~ log(income), 
+     col = "steelblue",
+     pch = 20,
+     data = CASchools,
+     main = "Level-Log Regression Fit", 
+     cex.main = 1)
+abline(LevelLog_model, 
+       col = "red", 
+       lwd = 2)
+
+# Income in original levels (1000 US$)
+# and add regression fitted values 
+plot(score ~ income, 
+     col = "steelblue",
+     pch = 20,
+     data = CASchools,
+     main = "Level-Log Regression Fit", 
+     cex.main = 1)
+
+# add the linear-log regression line
+order_id  <- order(CASchools$income)
+
+lines(CASchools$income[order_id],
+      fitted(LevelLog_model)[order_id], 
+      col = "red", 
+      lwd = 2)
+``` 
+
+
+Denklem formunda yazarsak: 
+
+$$\widehat{score} = 557.832 + 36.42\log(income)$$
+**Eğim katsayısının yorumu**: Gelir düzeyindeki %1 artışa karşılık test sonuçlarında ortalamada yaklaşık 0.36 (=36.42/100) puanlık bir artış tahmin edilmiştir. Gelirde %10 bir artış olursa test sonuçlarında tahmin edilen ortalama artış yaklaşık 3.64 puan olacaktır. 
+
+
+# Örnek: CEO maaşları ve satışlar (Log-log ):
+
+Model: 
+$$log(salary) = \beta_0 + \beta_1 log(sales) + u$$
+
+R çözümü: 
+```{r CEOsal1}
+LogLog_model <- lm(log(salary) ~ log(sales), data = ceosal1)
+# View(LogLog_model)
+summary(LogLog_model) 
+``` 
+
+**Eğim katsayısının yorumu**: CEO maaşlarının firma satışlarına göre esnekliği 0.257 olarak tahmin edilmiştir. Yani satışlarda %1 artışa karşılık CEO maaşlarında modelce kestirilen ortalama artış yaklaşık % 0.257'dir (inelastik). 
+
+
+Denklem formunda: 
+$$ \widehat{\log(salary)} = `r round(LogLog_model$coefficients[1], 3)`  + `r round(LogLog_model$coefficients[2], 3)`~~ \log(sales)  $$
+
+
+Görselleştirme: 
+
+```{r CEOsal2, echo=TRUE}
+plot(log(salary) ~ log(sales), 
+     col = "steelblue",
+     pch = 20,
+     data = ceosal1,
+     main = "Log-Log Regression Fit", 
+     cex.main = 1)
+abline(LogLog_model, 
+       col = "red", 
+       lwd = 2)
+``` 
+
+**Alıştırma**: Level-level regresyonunu tahmin ediniz ve sonuçları görselleştiriniz. Log-log sonuçları ile karşılaştırınız. Hangisi daha iyi bir uyum sağlıyor? 
+
+
+
+<div class="tocify-extend-page" data-unique="tocify-extend-page" style="height: 0;"></div>

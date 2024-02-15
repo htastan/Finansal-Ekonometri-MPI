@@ -1,0 +1,88 @@
+---
+title: "Finansal Ekonometri"
+author: 
+  name: "Prof. Dr. Hüseyin Taştan"
+  affiliation: "Yıldız Teknik Üniversitesi"
+output: 
+  html_document:
+    theme: flatly
+    highlight: haddock
+date: ""
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Finansal Ekonometri (YTU MP İktisat TYL) ders notları 
+
+## Ders Planı
+
+
+1. Giriş: [html](docs/Giris.html)  
+
+2. Temel Kavramlar: [html](docs/Temelk.html)  
+
+3. R Programı  
+    - R Base: <https://htastan.github.io/R-Giris/R-Base.html>
+      - Repository: <https://github.com/htastan/R-Giris>
+    - R Tidyverse: <https://htastan.github.io/R-Giris/R-Tidyverse.html>
+      - Repository: <https://github.com/htastan/R-Giris> 
+    - R Zaman Serileri: [html](R/R-zaman-serileri.html)
+    - R Markdown Nedir: [html](R/RMarkdown.html) 
+    - R Markdown Örnek: <https://htastan.github.io/RMarkdown-Ornek/RMarkdown_Ornek>
+      - Repository: <https://github.com/htastan/RMarkdown-Ornek>
+    - R Veri İndirme: <https://htastan.github.io/R-veri-indirme/R_veri_paketleri>
+      - Repository: <https://github.com/htastan/R-veri-indirme>
+<br/>
+<br/>
+
+4. Regresyon Analizine giriş, Basit regresyon modeli, Sıradan En Küçük Kareler (OLS) yöntemi, Logaritmik fonksiyon kalıpları, Hipotez Testleri
+    - Sunum notları: [html](docs/regresyon_analizi1.html)  
+    - Uygulamalar: [html](R/Uygulama-Regresyon-analizi-1.html) | [RMarkdown](R/Uygulama-Regresyon-analizi-1.Rmd)
+<br/>
+<br/>
+
+5. Çoklu regresyon modeli, Kategorik değişkenler, Etkileşim değişkenleri, Hipotez Testleri 
+    - Sunum notları: [html](docs/regresyon_analizi2.html)  
+    - Uygulamalar: [html](R/Uygulama-Regresyon-analizi-2.html) | [RMarkdown](R/Uygulama-Regresyon-analizi-2.Rmd)
+<br/>
+<br/>
+
+6. Standartlaştırılmış regresyon, Potansiyel problemler, Kestirim, Makine Öğrenmesi ve regresyon analizi
+    - Sunum notları: [html](docs/regresyon_analizi3.html)  
+    - Uygulamalar: [html](R/Uygulama-Regresyon-analizi-3.html) | [RMarkdown](R/Uygulama-Regresyon-analizi-3.Rmd)
+<br/>
+<br/>
+
+7. Finansal zaman serileri analizine giriş, Zaman serisi tanımı, White Noise süreci, Otokorelasyon, Durağanlık, Klasik zaman serisi ayrıştırması
+    - Sunum notları: [html](docs/zaman_serileri1.html)  
+    - Uygulamalar: [html](R/Uygulama-Zaman-serileri-1.html) | [RMarkdown](R/Uygulama-Zaman-serileri-1.Rmd)
+<br/>
+<br/>
+
+8. Zaman serileriyle öngörü (forecasting), ARIMA modelleri
+    - Sunum notları: [html](docs/zaman_serileri2.html)  
+    - Uygulamalar: [html](R/Uygulama-Zaman-serileri-2.html) | [RMarkdown](R/Uygulama-Zaman-serileri-2.Rmd)
+<br/>
+<br/>
+
+9. Statik ve Dinamik regresyon modelleri, Vektör Otoregresyon (VAR) modeli, Granger-nedensellik testi 
+    - Sunum notları: [html](docs/zaman_serileri3.html)  
+    - Uygulamalar: [html](R/Uygulama-Zaman-serileri-3.html) | [RMarkdown](R/Uygulama-Zaman-serileri-3.Rmd)
+<br/>
+<br/>
+
+10. Durağan ve durağan olmayan zaman serileri, Birim kök testleri, ADF testi, Eşbütünleşme (Cointegration) ve Hata Düzeltme Modelleri (ECM) 
+    - Sunum notları: [html](docs/zaman_serileri4.html)  
+    - Uygulamalar: [html](R/Uygulama-Zaman-serileri-4.html) | [RMarkdown](R/Uygulama-Zaman-serileri-4.Rmd)
+<br/>
+<br/>
+
+11. Finansal zaman serileriyle volatilite (oynaklık) modellemesi, ARCH, GARCH, EGARCH, GJR-GARCH, GARCH-in-mean modelleri. 
+    - Sunum notları: [html](docs/zaman_serileri4.html)  
+    - Uygulamalar: [html](R/Uygulama-Zaman-serileri-5.html) | [RMarkdown](R/Uygulama-Zaman-serileri-5.Rmd)
+<br/>
+<br/>
+
+

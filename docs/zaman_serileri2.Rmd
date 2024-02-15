@@ -1,0 +1,478 @@
+---
+title: "Öngörü"
+author: "Prof. Dr. Hüseyin Taştan"
+subtitle: Finansal Ekonometri 
+institute: Yıldız Teknik Üniversitesi - MP İktisat TYL Programı
+#date: " "
+output: 
+  xaringan::moon_reader:
+    css: [default, metropolis]
+    lib_dir: libs
+    nature:
+      beforeInit: "macros.js"
+      highlightStyle: github
+      highlightLines: yes
+      countIncrementalSlides: no
+      ratio: '16:9'
+  html_document:
+    df_print: paged
+  pdf_document: default
+
+
+---
+class: my-medium-font
+
+<style type="text/css">
+.remark-slide-content {
+    font-size: 25px;
+    padding: 1em 4em 1em 4em;
+}
+.my-large-font {
+  font-size: 40px;
+}
+.my-small-font {
+  font-size: 20px;
+}
+.my-medium-font {
+  font-size: 30px;
+}
+.left-column {
+  width: 75%;
+  float: left;
+  padding-top: 1em;
+}
+.right-column {
+  width: 25%;
+  float: right;
+  padding-top: 1em;
+}
+</style>
+
+
+
+
+# Plan
+
+- [Zaman serileri ile Öngörü](#ongoru) 
+
+- [Basit öngörü yöntemleri](#basit) 
+
+- [Değişkenlerin dönüştürülmesi](#trans)
+
+- [Kalıntı analizi](#resids)
+
+- [Öngörü performansının ölçümü](#perform)
+
+- [ARIMA modelleri](#arima)
+
+
+ 
+
+---
+name: ongoru 
+
+# Öngörü: Temel Kavramlar
+ 
+
+- Öngörüde amaç mevcut tüm bilgiyi kullanarak bir zaman serisinin gelecekteki değerine ilişkin en başarılı (en düşük hatalı) tahmini (kestirimi) oluşturmaktır
+
+- Öngörü hesaplamak istediğimiz değişken, $y_t$, bir rassal değişkendir. Mevcut bilgi kümemizi ${\cal I}$ ile gösterebiliriz. Örneğin  $\cal I = \{y_1,y_2,\dots,y_{t-1}\}$ zaman serisinin tüm gerçekleşmelerini içerir. 
+
+- Bu bilgi kümesine koşullu olarak $t$ zamanı için öngörmek istediğimiz rassal değişken: $y_{t} |{\cal I}$ olur. Bunun bir olasılık dağılımına sahip olduğunu varsayıyoruz. 
+- Nokta öngörüsü: $y_{t} |{\cal I}$ dağılımının ortalaması veya medyanı. 
+
+- Öngörü varyansı: $\text{var}[y_{t} |{\cal I}]$
+
+- Aralık öngörüsü: $y_t$ için yüksek olasılıklı bir değerler aralığı. 
+
+
+---
+# Öngörü: Temel Kavramlar
+
+- Bir dönem sonrası için öngörü notasyonu: 
+$${y}_{t|t-1} = y_t | \{y_1,y_2,\dots,y_{t-1}\}$$
+ya da $t$ zamanı bilgi kümesine dahilse: 
+$${y}_{t+1|t} = y_{t+1} | \{y_1,y_2,\dots,y_{t}\}$$
+
+- $T$ gözlemden oluşan bir zaman serisi gerçekleşmesinden hareketle $h$ dönem sonrası için öngörü:
+$$\hat{y}_{T+h|T} =\text{E}[y_{T+h} | y_1,\dots,y_T]$$
+
+- Burada $\hat{y}_{T+h|T}$ mevcut tüm bilgi kullanılarak bilinmeyen rassal değişken $y_{T+h}$ için oluşturulan öngörüyü ifade etmektedir. 
+
+- $h$ yani öngörü ufku (horizon) arttıkça öngörü varyansı da artar. Bunun sebebi uzak geleceğe ilişkin öngörülerin daha fazla belirsizlik içermesidir. 
+
+
+---
+name: basit
+
+# Bazı basit öngörü yöntemleri 
+
+.pull-left[
+**Ortalama Yöntemi**
+- Gelecekteki değerler geçmiş değerlerin, $\{y_1,\dots,y_T\}$, ortalamasıdır.
+- Öngörüler: 
+$$\hat{y}_{T+h|T} = \bar{y} = (y_1+\dots+y_T)/T$$
+]
+.pull-right[
+```{r, echo=FALSE}
+knitr::include_graphics("img/temp_ongoru1.png")
+```
+]
+
+---
+# Bazı basit öngörü yöntemleri 
+
+.pull-left[
+**Naif Öngörü**
+- Gelecekteki değerler en son gözlemlenen geçmiş değere eşittir.
+
+- Mevcut bilgi ışığında en iyi öngörü en son değerdir (etkin piyasa hipotezi?)
+
+- $h$ dönem sonrası için öngörüler: 
+
+$$\hat{y}_{T+h|T} =y_T$$
+]
+
+.pull-right[
+```{r, echo=FALSE}
+knitr::include_graphics("img/temp_ongoru2.png")
+```
+]
+
+
+---
+# Bazı basit öngörü yöntemleri 
+
+.pull-left[
+**Mevsimsel Naif Öngörü**
+- Gelecekteki değerler geçmişte aynı mevsimde gözlemlenen değere eşittir. 
+
+- Örneğin aylık serilerde Nisan ayı için öngörü geçen yılın Nisan ayına eşittir. Çeyreklik veriler için benzer şekilde en son gözlemlenen aynı mevsimin değeri kullanılır. 
+
+- Mevsimsel seriler için uygun olabilir. Geleceğe ilişkin yapılabilecek en iyi öngörünün geçmiş değerler olduğu varsayımına dayanır. 
+]
+
+.pull-right[
+```{r, echo=FALSE}
+knitr::include_graphics("img/temp_ongoru3.png")
+```
+]
+
+
+---
+# Bazı basit öngörü yöntemleri 
+
+.pull-left[
+**Drift yöntemi**
+- Drift = zaman içindeki toplam değişim (sürüklenme terimi)
+- Drift = tarihsel serideki ortalama değişime eşit kabul edilirse: 
+$$\hat{y}_{T+h|T} = y_{T} + \frac{h}{T-1}\sum_{t=2}^T (y_{t}-y_{t-1})$$ 
+$$= y_{T} + h \left( \frac{y_{T} -y_{1}}{T-1}\right).$$
+- İlk ve son gözlemler arasında bir çizgi çekilip geleceğe doğru yapılan doğrusal ekstrapolasyona eşit. 
+]
+
+.pull-right[
+```{r, echo=FALSE}
+knitr::include_graphics("img/google_ongoru1.png")
+```
+]
+
+---
+# Google hisse fiyatının basit yöntemlerle öngörülmesi 
+```{r, echo=FALSE, out.width = "80%", fig.align='center'}
+knitr::include_graphics("img/google_ongoru2.png")
+```
+
+
+---
+name: trans 
+
+# Değişken dönüştürmeleri 
+
+- $e$ tabanlı logaritma (doğal log) dönüştürmesini özel bir hal olarak barındıran 
+Box-Cox transformasyonu pratikte yaygın olarak kullanılır: 
+$$w_t = \left\{\begin{array}{ll}\log(y_t),      & \quad \lambda = 0; \\(y_t^\lambda-1)/\lambda ,         & \quad \lambda \ne 0.\end{array}\right.$$
+
+
+
+- $\lambda$ değerini optimal şekilde seçerek mevsimsel hareketleri ve genel olarak varyansı stabil hale getirebiliriz. 
+* $\lambda=1$: (dönüştürme yok)
+* $\lambda=\frac12$: (Square root plus linear transformation)
+* $\lambda=0$: (Doğal logaritma)
+* $\lambda=-1$: (Inverse plus 1)
+
+- Öngörüyü oluşturduktan sonra ters dönüştürme ile orijinal ölçü biriminden öngörüleri hesaplayabiliriz. 
+
+
+---
+name: resids 
+
+# Kalıntı analizi
+
+- Kalıntılar gözlenen değerlerle modelin tahmin ettiği değerler arasındaki farktır. 
+
+- Örneğin naif yöntem için: tahmin değerleri $\hat{y}_{t|t-1}= y_{t-1}$; kalıntılar $e_t = y_t-\hat{y}_{t|t-1}=y_t-y_{t-1}$ olur. (random walk tahmini) 
+
+- İyi bir öngörü modelinde kalıntılar aşağıdaki özelliklere sahiptir: 
+   - Kalıntılar birbirleriyle ilişkisizdir (otokorelasyon yok). Kalıntılar ilişkiliyse bu modelin yakalayamadığı ve öngörüde kullanılmayan bilginin olduğu anlamına gelir. 
+   - Kalıntıların ortalaması sıfırdır. Aksi durumda öngörüler yanlıdır. 
+
+- Bu özellikleri sağlayan çok sayıda öngörü modeli olabilir. Genellikle bu kriterler tek başına model seçiminde yeterli olmayabilir. 
+
+---
+# Tahmin değerleri: Google hisse senedi naif öngörüler
+```{r, echo=FALSE, out.width = "80%", fig.align='center'}
+knitr::include_graphics("img/google_ongoru4.png")
+```
+
+
+---
+# Kalıntı analizi örnek: Google hisse senedi naif öngörüler
+```{r, echo=FALSE, out.width = "70%", fig.align='center'}
+knitr::include_graphics("img/google_ongoru3.png")
+```
+
+
+---
+name: perform
+
+# Öngörü hatası 
+
+- Elimizdeki veri setini eğitim (tahmin) ve test olmak üzere iki parçaya ayırdığımızı düşünelim. Eğitim verilerini modelin parametrelerini tahmin etmek için; test verilerini ise öngörü performansını hesaplamak için kullanacağız. 
+
+- Öngörü performansını değerlendirmek için önce öngörü hatasını tanımlayalım: 
+$$e_{T+h} = y_{T+h} - \hat{y}_{T+h|T},$$
+Burada $\{y_1,\dots,y_T\}$ verileri modelin tahmininde (eğitiminde, training) kullanılmıştır. Öngörü hatasının hesabında ise $\{y_{T+1},y_{T+2},\dots\}$ test verileri kullanılmıştır. 
+
+- Öngörü hatasının test kümesinde hesaplandığına dikkat ediniz (kalıntılarla karıştırmayınız).
+
+---
+# Öngörü performansının ölçümü 
+
+- $y_{T+h}=$ $(T+h)$nci gözlem, $h=1,\dots,H$ 
+- $\hat{y}_{T+h|T}=$ $T$ gözlemden hareketle hesaplanan öngörü. 
+- $e_{T+h} = y_{T+h} - \hat{y}_{T+h|T}$, öngörü hatası  
+
+olmak üzere öngörü hata ölçütleri: 
+
+- $MAE=ortalama(|e_{T+h}|)$, (Ortalama mutlak hata, Mean Absolute Error)
+
+- $MSE=ortalama(e_{T+h}^2)$, (ortalama kare hata, Mean Square Error)
+
+- $RMSE=\sqrt{ortalama(e_{T+h}^2)}$, (Karekök ortalama kare hata, Root Mean Square Error)
+
+- $MAPE=100.ortalama(|e_{T+h}|/ |y_{T+h}|)$
+
+- MAE, MSE, RMSE ölçü birimlerine bağlıdır. MAPE ölçü birimine bağlı değildir ancak tüm değerler kesin pozitif olmalı ve doğal 0 tanımlanabilmelidir. 
+
+
+---
+name: arima 
+
+# ARIMA Modelleme Yaklaşımı 
+
+- ARIMA: AutoRegressive Integrated Moving Average
+
+- ARIMA modellerinde değişkenin kendi gecikmeleri ve hata teriminin gecikmeleri kullanılır. 
+
+- Tipik bir ARIMA(p,0,q) modeli (ya da kısaca ARMA(p,q) modeli) aşağıdaki gibi yazılabilir:
+$$y_{t} = c + \phi_{1}y_{t-1} + \cdots + \phi_{p}y_{t-p} + \theta_{1}\varepsilon_{t-1} + \cdots + \theta_{q}\varepsilon_{t-q} + \varepsilon_{t}$$
+burada $\varepsilon_{t}$ bir white noise sürecidir. 
+
+- Zaman serisi $y_t$'nin durağan olduğu varsayılmıştır. 
+
+- Seri durağan değilse birinci farkı alınarak durağanlaştırılabilir. 
+
+- Genele olarak ARIMA(p,d,q) modelinde $d$, değişkenin durağanlaştırılması için gereken fark sayısıdır. Pratikte genellikle $d=1$ veya $d=2$ kullanılır. Bu amaçla durağanlık ve birim kök testleri geliştirilmiştir.  
+
+- ARIMA modelinde p, d ve q'nun araştırmacı tarafından belirlenmesi gerekir. 
+
+---
+# AR(p) Modeli
+
+- Genel olarak $p$ gecikmeli bir otoregresif model aşağıdaki gibi yazılabilir: 
+$$y_{t} = c + \phi_{1}y_{t-1} + \phi_{2}y_{t-2} + \dots + \phi_{p}y_{t-p} + \varepsilon_{t},$$
+
+- Otokorelasyon fonksiyonunun şekli: ACF sıfıra hızlı bir şekilde yaklaşır. 
+
+- Kısmi otokorelasyonlar: PACF (partial autocorrelation function) $p$ gecikmeden sonra sıfır olur. 
+
+- 1. kısmi otokorelasyon: PACF(1) = ACF(1)
+- PACF(2) = birinci gecikmenin etkisi kontrol edildikten sonra ikinci gecikmenin kısmi korelasyonu
+- PACF(3) = birinci ve ikinci gecikmelerin etkisi kontrol edildikten sonra 3ncü gecikmenin kısmi korelasyonu, 
+- vb.
+
+---
+# Örnek: AR(1) Süreci 
+$$y_{t} = c + \phi_{1}y_{t-1} + \varepsilon_{t},$$
+- $c=0$ ve $\phi_{1}=0.5$ için simülasyon: 
+```{r, echo=FALSE, out.width = "70%", fig.align='left'}
+knitr::include_graphics("img/ar1_sim1.png")
+```
+
+---
+# Örnek: AR(1) Süreci 
+$$y_{t} = c + \phi_{1}y_{t-1} + \varepsilon_{t},~~ -1 < \phi_1 < 1,durağanlık~ kısıtı$$
+- $c=0$ ve $\phi_{1}=0.8$ için simülasyon: 
+```{r, echo=FALSE, out.width = "70%", fig.align='left'}
+knitr::include_graphics("img/ar1_sim2.png")
+```
+
+
+---
+# Örnek: AR(1) Süreci 
+$$y_{t} = c + \phi_{1}y_{t-1} + \varepsilon_{t},$$
+- $c=0$ ve $\phi_{1}=0.95$ için simülasyon: 
+```{r, echo=FALSE, out.width = "70%", fig.align='left'}
+knitr::include_graphics("img/ar1_sim3.png")
+```
+
+---
+# Örnek: AR(2) Süreci 
+$$y_{t} = c + \phi_{1}y_{t-1} + \phi_{2}y_{t-2}+ \varepsilon_{t},$$
+- $c=0$ ve $\phi_{1}=0.5$, $\phi_{2}=0.4$  için simülasyon: 
+```{r, echo=FALSE, out.width = "70%", fig.align='left'}
+knitr::include_graphics("img/ar2_sim1.png")
+```
+
+
+---
+# Hareketli Ortalamalar, MA(q) Süreci
+
+- Moving Average süreci: 
+$$y_{t} = c + \varepsilon_t + \theta_{1}\varepsilon_{t-1} + \theta_{2}\varepsilon_{t-2} + \dots + \theta_{q}\varepsilon_{t-q},$$
+burada $\varepsilon_{t}$ bir white noise sürecidir.
+
+- ACF ve PACF davranışı: 
+  - ACF $q$ gecikmeden sonra sıfırdır. 
+  - PACF düzenli ve hızlı bir şekilde sıfıra yaklaşır. 
+
+---
+# Örnek: MA(1) Süreci 
+$$y_{t} = c + \varepsilon_t + \theta_{1}\varepsilon_{t-1},$$
+- $c=0$ ve $\theta_{1}=0.8$  için simülasyon: 
+```{r, echo=FALSE, out.width = "70%", fig.align='left'}
+knitr::include_graphics("img/ma1_sim1.png")
+```
+
+---
+# Örnek: MA(2) Süreci 
+$$y_{t} = c + \varepsilon_t + \theta_{1}\varepsilon_{t-1} + \theta_{2}\varepsilon_{t-2},$$
+- $c=0$, $\theta_{1}=0.9$ ve $\theta_{2}=-0.3$ için simülasyon: 
+```{r, echo=FALSE, out.width = "70%", fig.align='left'}
+knitr::include_graphics("img/ma2_sim1.png")
+```
+
+---
+# ARMA(p,q) Modeli 
+
+- ARMA(1,1): 
+
+$$y_{t} = c + \phi_{1}y_{t-1} + \varepsilon_{t} + \theta_{1}\varepsilon_{t-1}$$
+
+- ARMA(2,2): 
+$$y_{t} = c + \phi_{1}y_{t-1} + \phi_{2}y_{t-2} + \varepsilon_{t} + \theta_{1}\varepsilon_{t-1} + \theta_{2}\varepsilon_{t-2}$$
+
+- ARMA(p,q): 
+$$y_{t} = c + \phi_{1}y_{t-1} + \phi_{2}y_{t-2} + \dots + \phi_{p}y_{t-p} +  \theta_{1}\varepsilon_{t-1} + \theta_{2}\varepsilon_{t-2} + \dots + \theta_{q}\varepsilon_{t-q} + \varepsilon_t$$
+
+- Bir ARMA(p,q) modelinin otokorelasyonları modelin gecikmelerine göre daha karmaşık bir yapı sergiler.  
+
+- ARMA(p,1,q): birinci farkı alındıktan sonra ARMA(p,q) sürecini takip eder. 
+
+
+---
+# Mevsimsel olmayan ARIMA(p,d,q) modeli 
+
+- p = otoregresif kısımdaki gecikme sayısı
+- q = hareketli ortalama (MA) kısmındaki gecikme sayısı
+- d = birinci fark alma sayısı
+
+- Özel durumlar: 
+  - ARIMA(0,0,0): White Noise 
+  
+  - ARIMA(0,1,0) sabit terimsiz: Random Walk 
+  
+  - ARIMA(0,1,0) + sabit: Random Walk with drift
+  
+  - ARIMA(p,0,0): Otoregresyon
+  
+  - ARIMA(0,0,q): MA süreci
+
+
+
+
+---
+# ARIMA(p,d,q) Modeli
+
+- Serinin kaç birinci farkı alınacağına birim kök testleriyle karar verilebilir. Yaygın kullanılan birim kök testleri: ADF, KPSS 
+
+- ADF (Augmented Dickey-Fuller): $H_0:$ seri durağan değil 
+
+- KPSS testi: $H_0:$ seri durağandır (Hyndman-Khandakar R algoritması bunu kullanır)
+
+- Gecikme uzunluklarının (p,q) seçiminde ACF, PACF davranışı baz alınarak veriye dayalı bilgi kriterleri ile karar verilebilir. 
+
+- Bilgi kriterleri: Akaike Information Criterion (ACF), Schwarz' Bayesian Information Criterion (BIC ya da SIC)
+
+- Alternatif modeller arasından AIC veya BIC küçük olan seçilir. Durağan olmayan serilerin birinci farkı alındıktan sonra karşılaştırmalar yapılmalıdır. 
+
+(formüller için bkz.[https://otexts.com/fpp2/arima-estimation.html](https://otexts.com/fpp2/arima-estimation.html))
+
+
+---
+# Hyndman-Khandakar Otomatik ARIMA modellemesi 
+
+- Bu algoritma Box-Jenkins ARIMA modelleme yaklaşımının modern bir yorumudur. 
+
+- Algoritmanın adımları aşağıda verilmiştir. 
+
+1. KPSS birim kök testi ile birinci fark sayısının belirlenmesi, $0 \le d\le 2$
+
+2. Değişkenin $d$ farkı alındıktan sonra AICc ile gecikme sayıları $p$ ve $q$'nun belirlenmesi. 
+
+  a. Başlangıç modelleri: ARIMA(0,d,0), ARIMA(2,d,2), ARIMA(1,d,0), ARIMA(0,d,1)
+  
+  b. Bu modeller arasından en küçük AICc değerine sahip model seçilir (mevcut model)
+  
+  c. Mevcut modelin p ve q değerleri birer birer arttırılır veya eksiltilir ve en iyi model mevcut model olur. 
+  
+  d. 2(c) adımı daha küçük AICc değeri elde edilmeyene kadar tekrarlanır 
+
+(detaylar için bkz.[https://otexts.com/fpp2/arima-r.html](https://otexts.com/fpp2/arima-r.html))
+
+---
+# Mevsimsel ARIMA modellemesi 
+
+- $ARIMA(p,d,q)(P,D,Q)_m$
+- $(p,d,q)$: Mevsimsel olmayan kısım
+- $(P,D,Q)$: Mevsimsel kısım
+- $m$ = mevsim sayısı, aylık veriler için $m=12$, çeyreklik veriler için $m=4$
+- $D$ = mevsimsel fark = şimdiki değerin bir önceki yılın aynı döneminden farkı
+- $P$, $Q$ = mevsimsel AR ve MA gecikme uzunlukları
+
+- Örneğin toplamsal $ARIMA(0,1,1)+SARIMA(0,1,1)_m$ modeli serinin mevsimsel farkını aldıktan sonra birinci farkını alır ve $q=1$ mevsimsel olmayan gecikme ve $Q=1$ mevsimsel gecikme ekler. Çeyreklik veriler için $m=4$: 
+$$(y_{t} - y_{t-4})-(y_{t-1} - y_{t-5}) = c + \varepsilon_t + \theta_1\varepsilon_{t-1} + \Theta_1 \varepsilon_{t-4}$$ 
+
+- Genel olarak çarpımsal $ARIMA(p,d,q)(P,D,Q)_m$ modellerinde mevsimsel katsayılar ile ARMA katsayıları etkileşim halindedir. Pratikte yaygın olarak çarpımsal modeller kullanılır. 
+
+
+---
+# ARIMA modelleri diagnostik testler
+
+- Başarılı modellerin seçiminde AIC, SIC gibi bilgi kriterleri kullanılabilir. $R^2$ kullanılamaz.  
+
+- Kalıntı analizi mutlaka yapılmalıdır. 
+
+- Kalıntılar otokorelasyonsuz olmalıdır (white noise benzeri davranış sergilemelidir). 
+
+- Kalıntıların ACF grafiği anlamlı ise değişkenin dinamik davranışı yeterince iyi modellenememiştir. Seride açıklanamayan hareketler vardır. 
+
+- Otokorelasyon testleri: Ljung-Box Q istatistikleri seçilmiş gecikme uzunluğunda anlamsız olmalı (p değeri anlamlılık düzeyinden büyük)
+
+- ARIMA modelleri yapısal kırılmaların, rejim değişikliklerinin ve uç değerlerin olmadığı doğrusal ve durağan zaman serilerinde kısa dönem öngörü oluşturmada başarılı sonuçlar vermektedir. 
+
+
+
+    
+    

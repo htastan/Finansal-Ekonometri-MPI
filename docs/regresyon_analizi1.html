@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Basit Regresyon Modeli</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Prof. Dr. Hüseyin Taştan" />
+    <script src="libs/header-attrs-2.23/header-attrs.js"></script>
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/metropolis.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+.title[
+# Basit Regresyon Modeli
+]
+.subtitle[
+## Finansal Ekonometri
+]
+.author[
+### Prof. Dr. Hüseyin Taştan
+]
+.institute[
+### Yıldız Teknik Üniversitesi - MP İktisat TYL Programı
+]
+
+---
+
+class: my-medium-font
+
+&lt;style type="text/css"&gt;
+.remark-slide-content {
+    font-size: 25px;
+    padding: 1em 4em 1em 4em;
+}
+.my-large-font {
+  font-size: 40px;
+}
+.my-small-font {
+  font-size: 20px;
+}
+.my-medium-font {
+  font-size: 30px;
+}
+.left-column {
+  width: 75%;
+  float: left;
+  padding-top: 1em;
+}
+.right-column {
+  width: 25%;
+  float: right;
+  padding-top: 1em;
+}
+&lt;/style&gt;
+
+
+
+
+# Plan
+
+- [Basit regresyon modeli](#basit)
+
+- [Ceteris Paribus nosyonu](#cetpar)
+
+- [Popülasyon regresyon fonksiyonu](#prf)
+
+- [Sıradan En Küçük Kareler Tahmini](#ols)
+
+- [Regresyonun açıklama gücü](#r2)
+
+- [Doğrusal olmama](#nonlinear)
+
+- [Anlamlılık sınaması](#ttest)
+
+---
+name: basit 
+
+# Tek açıklayıcı değişkenli (basit) regresyon modeli 
+`$$y = \beta_0 + \beta_1 x + u$$`
+
+- `\(y\)`: bağımlı değişken
+
+- `\(x\)`: açıklayıcı değişken
+
+- İki değişkenli regresyon modeli (bivariate regression model), tek açıklayıcı 
+değişkenli model, basit regresyon modeli (simple regression model)
+
+- Amaç: bağımlı değişken `\(y\)`'yi, bağımsız değişken `\(x\)` ile açıklamak. 
+
+- Regression teriminin orijini: Galton'un ortalamaya dönüş (regress) yasası
+    
+    
+
+
+---
+# Rassal hata terimi 
+
+Basit Regresyon Modeli: 
+`$$y = \beta_0 + \beta_1 x + u$$`
+
+- Rassal Hata Terimi: `\(u\)` (Error term - Disturbance term), Bağımlı değişken `\(y\)` üzerinde etkili olan `\(x\)`'in dışındaki diğer faktörleri (modelde yer almayan olası tüm değişkenler) temsil eder.
+
+- Bu diğer etkenlere gözlenemeyen (unobserved) faktörler denir.
+
+- Eğer `\(u\)`'da yer alan diğer faktörler sabit tutulursa, yani `\(\Delta u = 0\)` kabul edilirse `\(x\)`'in `\(y\)` üzerindeki etkisi aşağıdaki gibi bulunabilir:
+$$ \Delta y = \beta_1 \Delta x$$
+
+- Eğim katsayısı `\(\beta_1\)`: Diğer faktörler sabitken (ceteris paribus) `\(x\)`'deki bir birim değişmenin `\(y\)`'de yaratacağı değişimi gösterir. 
+
+- Sabit terim (intercept) `\(\beta_0\)`: `\(x=0\)` iken `\(y\)`'nin alacağı değeri gösterir.
+
+
+---
+# Örnek: Eğitim düzeyi ve saatlik ücretler 
+
+$$ ücret = \beta_0 + \beta_1 eğitim + u$$
+ücret: saat başına ücretler (dolar); eğitim: eğitim düzeyi (yıl)
+
+- Eğim Katsayısı `\(\beta_1\)`'in yorumu
+`$$\Delta ücret = \beta_1 \Delta eğitim$$`
+Ceteris Paribus eğitim düzeyindeki 1 yıllık değişim, saat başına ücretleri ortalamada `\(\beta_1\)` \$ kadar değiştirir. 
+
+- Rassal hata terimi `\(u\)`: Ücretleri etkileyen eğitim dışındaki diğer tüm gözlenemeyen faktörleri temsil eder. Emek piyasasındaki tecrübe (yıl), doğuştan gelen yetenek, şu an çalışılan yerdeki kıdem, iş etiği, alınan eğitimin kalitesi, çalışanın cinsiyeti, etnik kökeni, kır ya da kente yaşaması, medeni hali, çocuk sayısı, dış görünüşü vs. gibi çok sayıda faktör ücretleri etkileyebilir. 
+
+
+---
+# Örnek: Eğitim düzeyi ve saatlik ücretler 
+
+
+
+
+&lt;img src="img/educ-wage-plot1.png" width="80%" style="display: block; margin: auto;" /&gt;
+
+---
+# Koşullu dağılım
+
+- 12 yıl eğitim düzeyine sahip olanların ücret dağılımı, `\(f(ücret|eğitim=12)\)`
+
+
+
+&lt;img src="img/educ-wage-plot2.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+
+---
+# Düzleştirilmiş histogram
+
+- 12 yıl ve 16 yıl eğitim düzeyine sahip olanların ücret dağılımlarını karşılaştıralım. 
+
+.pull-left[
+
+
+&lt;img src="img/educ-wage-plot3.png" width="100%" style="display: block; margin: auto;" /&gt;
+]
+.pull-right[
+- 12 yıl eğitime sahip olanlarda medyan ücret 4.5 USD, ortalama ücret = 5.37
+
+- 16 yıl eğitime sahip olanlarda medyan ücret=6.29, ortalama ücret = 8.042
+]
+
+
+---
+# Doğrusallık 
+
+- Basit regresyonun doğrusal (linear) olması şu anlama gelmektedir: `\(x\)`'deki 1 birimlik değişmenin `\(y\)`'de meydana getireceği etki, `\(x\)`'in başlangıç (initial) değeri ne olursa olsun, aynıdır (sabittir).
+
+- Bu sabit etki varsayımı uygulamada çoğu zaman gerçeklere uymaz. 
+
+- Örneğin, ölçeğe göre artan ya da azalan getiri doğrusal modelle açıklanamaz. 
+
+- Ücret denkleminde, ilave bir yıl eğitimin etkisi önceki eğitim düzey(ler)ine göre daha fazla olacaktır.
+
+- Benzer şekilde tecrübe düzeyi ücretler üzerinde önce artan sonra azalan bir etkiye sahip olabilir.
+
+- Basit dönüştürmeler kullanarak (örneğin doğal logaritma) bazı doğrusal olmayan etkileri kolayca modellemek mümkündür. 
+
+---
+name: cetpar 
+
+# Ceteris Paribus çıkarımları için gerekli varsayımlar
+
+**Hata teriminin anakütle ortalamasının sıfır olması**
+
+- Basit regresyonda sabit terim ( `\(\beta_0\)` ) mevcut olduğu sürece şu varsayımı yapabiliriz:
+`$$E(u)=0$$` 
+
+- Bu varsayım, `\(u\)`'nun içerdiği gözlenemeyen (unobservables) etkilerin dağılımıyla ilgili bir varsayımdır. 
+
+- `\(u\)`'ların bir kısmı `\(+\)`, bir kısmı `\(-\)` işaretlidir ve bunlar birbirlerini götürürler diye varsayıyoruz.
+
+- `\(\beta_0\)`'ı yeniden tanımlayarak bu varsayımın gerçekleşmesini her zaman sağlayabiliriz. 
+
+
+---
+# Ceteris Paribus  için gerekli varsayımlar
+
+**Hata terimi `\(u\)` ile açıklayıcı değişken `\(x\)`'in ilişkisiz olması koşulu**
+
+- `\(x\)`'in `\(y\)` üzerindeki etkisini görebilmemiz için `\(u\)`'da içerilen gözlenemeyen faktörlerin aynı (sabit) kalmaları (ceteris paribus koşulu) gerekli idi. Bundan nasıl emin olabiliriz?
+
+- Bunun için `\(x\)` ile `\(u\)`'nun ilişkisiz olması gereklidir. Ancak, `\(u\)` hem `\(x\)` ile, hem de `\(x\)`'in herhangi bir fonksiyonu (örneğin `\(x^2\)`, `\(\sqrt{x}\)` vs.) ile ilişkisiz olmalı.
+
+- Bunun için **Sıfır Koşullu Ortalama** varsayımını yapmamız gerekmektedir:
+`$$E(u|x) = E(u) = 0$$`
+
+
+---
+# Sıfır Koşullu Ortalama Varsayımı
+
+
+**Hata terimi `\(u\)` ile açıklayıcı değişken `\(x\)`'in ilişkisiz olması koşulu**
+`$$E(u|x) = E(u) = 0$$`
+
+- Burada `\(u\)` ve `\(x\)` tesadüfi değişkenlerdir (random variables). Bu nedenle, `\(x\)`'in verilen herhangi bir değeri için `\(u\)`'nun koşullu dağılımını tanımlayabiliriz.
+
+- `\(x\)`'in verilen belli bir değerine anakütlenin (population) belli bir dilimi (kısmı) karşılık gelir. Buradan hareketle `\(u\)`'nun bu populasyon dilimi içindeki beklenen değerini (ortalamasını) alabiliriz.
+
+- Burada kritik varsayım, `\(u\)`'nun ortalama değerinin `\(x\)`'in alacağı değere bağlı olmamasıdır.
+
+- `\(x\)`'in verilen herhangi bir değeri için gözlenemeyen faktörlerin ortalaması aynıdır ve dolayısıyla da `\(u\)`'nun tüm anakütledeki ortalama değerine (sıfıra) eşittir.
+
+
+---
+# Örnek 
+
+**Ücret Denklemi**:
+`$$ücret = \beta_0 + \beta_1 eğitim + u$$`
+
+- Bu regresyonda `\(u\)` doğrudan gözlenemeyen/ölçülemeyen çalışanların doğuştan gelen yeteneğini içersin. Bunu yetenek değişkeni ile gösterelim.
+
+- `\(E(u|x)\)` varsayımı tüm eğitim seviyelerinde doğuştan gelen yeteneğin aynı olduğunu söyler. Yani koşullu dağılım ortalamaları: 
+`$$E(yetenek|eğitim=8) = E(yetenek|eğitim=12) =\ldots = 0$$`
+
+- Eğer eğitimle doğuştan yeteneğin ilişkili olduğunu düşünüyorsak (daha yetenekliler okulda da daha iyiler), bu halde varsayım sağlanamaz.
+
+- Doğuştan yeteneği gözlemleyemediğimiz için de ortalama doğuştan yeteneğin tüm eğitim seviyelerinde aynı olup olmadığını bilemeyiz. 
+
+
+---
+name: prf
+
+# Popülasyon (Anakütle) Regresyon Fonksiyonu (PRF)
+
+- Basit regresyon modelinde `\(y\)`'nin `\(x\)`'e göre koşullu beklenen değerini alalım:
+`$$\begin{aligned}E(y|x)  &amp; = \beta_0 + \beta_1 x + \underbrace{E(u|x)}_{=0} \\              &amp; =  \beta_0 + \beta_1 x \end{aligned}$$`
+
+- Buna PRF adı verilir. Açıktır ki, bağımlı değişkenin koşullu beklenen değeri `\(x\)`'in doğrusal bir fonksiyonudur.
+
+- PRF'nin doğrusallığı: `\(x\)`'deki 1 birimlik değişime karşılık `\(y\)`'nin koşullu beklenen değeri (koşullu ortalaması) `\(\beta_1\)` kadar değişmektedir.
+
+- Verilmiş bir `\(x\)` düzeyinde `\(y\)`'nin dağılımının merkezi `\(E(y|x)\)`'dir. 
+
+---
+# Popülasyon (Anakütle) Regresyon Fonksiyonu (PRF)
+
+&lt;img src="img/PRF1.png" width="70%" style="display: block; margin: auto;" /&gt;
+ 
+
+
+---
+name: ols
+
+# Tahmin problemi
+
+- Bilinmeyen popülasyon parametreleri ( `\(\beta_0,\beta_1\)` ) verilerden hareketle nasıl tahmin edilebilir?
+
+- Popülasyondan `\(n\)` gözlemli (hacimli) bir rassal örneklem (random sample) çektiğimizi düşünelim:
+`$$\{y_i,x_i:i=1,2,\ldots,n\}$$`
+
+- Regresyon modelini herbir gözlem için aşağıdaki gibi yazabiliriz:
+`$$y_i = \beta_0 + \beta_1 x_i + u_i,~~~i=1,2,\ldots,n$$`
+
+- Bu durumda elimizde iki bilinmeyenli `\(n\)` denklem olacaktır.
+
+---
+#  Anakütle Katsayılarının Tahmini
+
+- Gözlemlerle endekslenmiş model:
+
+`$$y_i = \beta_0 + \beta_1 x_i + u_i,~~~i=1,2,\ldots,n$$`
+
+- İki bilinmeyenli `\(n\)` denklem:
+`$$\begin{eqnarray*}y_1 &amp;=&amp; \beta_0 + \beta_1 x_1 + u_1 \\
+    y_2 &amp;=&amp; \beta_0 + \beta_1 x_2 + u_2 \\
+    y_3 &amp;=&amp; \beta_0 + \beta_1 x_3 + u_3 \\
+    \vdots &amp;=&amp; \vdots \\
+    y_n &amp;=&amp; \beta_0 + \beta_1 x_n + u_n
+  \end{eqnarray*}$$`
+
+
+---
+# Sıradan En Küçük Kareler Yöntemi
+- `\(y\)`'nin modelce tahmin edilen değerleri (fitted values):
+`$$\hat{y}_i = \hat{\beta}_0 + \hat{\beta}_1 x_i$$`
+
+- Kalıntı (residual) terimleri gözlenen ile tahmin edilen `\(y\)` değerleri arasındaki farktır:
+`$$\begin{eqnarray*}\hat{u}_i &amp;=&amp; y_i - \hat{y}_i \\
+     &amp;=&amp; y_i -  \hat{\beta}_0 - \hat{\beta}_1 x_i
+ \end{eqnarray*}$$`
+ 
+- Kalıntı terimi, hata terimi ile karıştırılmamalıdır. `\(u\)` gözlenemeyen bir rassal değişkendir. `\(\hat{u}\)` ise modelce tahmin edilen bir büyüklüktür.
+
+- **OLS-SEKK amaç fonksiyonu**: OLS (OLS = Ordinary Least Squares) yöntemi kalıntı kareleri toplamını en küçük yapacak şekilde tahmincileri seçer:
+`$$\min_{\hat{\beta}_0, \hat{\beta}_1} SSR = \sum_{i=1}^n \hat{u}_i^2=\sum_{i=1}^n(y_i -  \hat{\beta}_0 - \hat{\beta}_1 x_i)^2$$`
+
+---
+# OLS-SEKK amaç fonksiyonu
+
+- OLS yöntemi kalıntı kareleri toplamını (SSR) en küçük yapacak şekilde tahmincileri seçer:
+`$$\min_{\hat{\beta}_0, \hat{\beta}_1} SSR = \sum_{i=1}^n (y_i -  \hat{\beta}_0 - \hat{\beta}_1 x_i)^2$$` 
+
+- OLS birinci sıra koşulları
+`$$\begin{eqnarray*}
+  \frac{\partial SSR}{\partial \hat{\beta}_0 } &amp;=&amp; -2 \sum_{i=1}^n (y_i - \hat{\beta}_0 - \hat{\beta}_1 x_i) = 0  \\
+  \frac{\partial SSR}{\partial \hat{\beta}_1 } &amp;=&amp; -2 \sum_{i=1}^n x_i(y_i - \hat{\beta}_0 - \hat{\beta}_1 x_i) = 0
+\end{eqnarray*}$$`
+
+- Birinci sıra koşullarından elde edilen iki bilinmeyenli iki denklemli sistem belirli şartlar altında çözülebilir. 
+
+---
+# OLS tahmincileri 
+
+- Eğim Katsayısının Tahmincisi
+`$$\hat{\beta}_1 = \frac{\sum_{i=1}^n (x_i - \bar{x})(y_i - \bar{y})}{\sum_{i=1}^n (x_i - \bar{x})^2}$$` 
+
+- Eğim katsayısı tahmincisi `\(x\)` ile `\(y\)`'nin örneklem kovaryansının, `\(x\)`'in örneklem varyansına oranıdır.
+
+- `\(\hat{\beta}_1\)`'nın işareti örneklem kovaryansının işaretine bağlıdır. Eğer örneklemde `\(x\)` ile `\(y\)` aynı yönde ilişkiliyse `\(\hat{\beta}_1\)` pozitif işaretli, ters yönde ilişkiliyse negatif işaretli olacaktır.
+
+- `\(\hat{\beta}_1\)`'nın hesaplanabilmesi için `\(x\)`'de yeterli değişkenlik olmalıdır:
+`\(\sum_{i=1}^n (x_i - \bar{x})^2&gt;0\)`
+
+- Eğer örneklemde tüm `\(x\)`'ler aynı değerleri alıyorsa örneklem varyansı 0 olur. Bu durumda `\(\hat{\beta}_1\)` tanımsız olur. Örneğin, ücret denkleminde tüm çalışanlar 12 yıllık eğitim düzeyine sahipse eğitimin ücretler üzerindeki etkisi hesaplanamaz. 
+
+
+---
+# Popülasyon ve Örneklem Regresyon Fonksiyonları
+
+- Popülasyon Regresyon Fonksiyonu - PRF (pratikte bilinmez)
+`$$E(y|x) = \beta_0 + \beta_1 x$$`
+
+- Örneklem Regresyon Fonksiyonu (Sample Regression Function - SRF)
+`$$\hat{y} = \hat{\beta}_0 + \hat{\beta}_1 x$$`
+SRF, PRF'nin bir tahmini olarak düşünülebilir. SRF verilere bağlı olarak değişir. 
+
+- Eğim katsayısının yorumu:
+`$$\hat{\beta}_1 = \frac{\Delta \hat{y}}{\Delta x}$$`
+ya da
+`$$\Delta \hat{y} = \hat{\beta}_1 \Delta x$$`
+
+
+---
+# Basit Regresyon Örnek: CEO Maaşları ve Karlılık
+
+- Firma performansı ile yöneticilerin kazançları arasındaki ilişkiyi ölçmek istiyoruz. Model:
+`$$salary = \beta_0 + \beta_1 roe + u$$`
+
+- Değişken tanımları: salary= yıllık yönetici maaşları (1000 US$), roe= son üç yıla ait sermaye karlılık oranı (return on equity), 
+
+- `\(n=209\)` firma verisinden hareketle SRF aşağıdaki gibi tahmin ediliyor:
+`$$\widehat{salary} = 963.191 + 18.501 roe$$`
+
+- `\(\hat{\beta}_1 = 18.501\)`. Yorum: Sermaye karlılık oranındaki %1 puanlık artış ortalama yönetici maaşlarını yaklaşık 18.501 birim, yani 18,501 USD arttırır (ceteris paribus). 
+
+
+---
+# CEO ve karlılık oranları 
+
+**Örneklem regresyon doğrusu ve serpilme çizimi**
+&lt;img src="img/salary1.png" width="80%" style="display: block; margin: auto;" /&gt;
+
+
+
+
+---
+# CEO ve karlılık oranları 
+
+**Popülasyon ve Örneklem regresyon fonksiyonları**
+&lt;img src="img/salary2.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+
+
+
+---
+#  OLS (SEKK) Tahmin Edicilerinin Cebirsel Özellikleri
+
+- OLS kalıntılarının toplamı ve dolayısıyla da örnek ortalaması sıfıra eşittir:
+`$$\sum_{i=1}^n \hat{u}_i = 0,~~~~~\bar{\hat{u}} = 0$$` 
+
+- Açıklayıcı değişken `\(x\)` ile kalıntı terimleri arasındaki örneklem kovaryansı sıfırdır:
+`$$\sum_{i=1}^n x_i\hat{u}_i = 0$$`
+
+- `\((\bar{x},\bar{y})\)` noktası daima OLS regresyon doğrusu üzerine düşer.
+
+- Tahmin edilen `\(y\)` değerlerinin ortalaması, gözlenen `\(y\)` değerlerinin ortalamasına eşittir: `\(\bar{y}=\bar{\hat{y}}\)` 
+
+---
+name: r2
+
+# Kareler Toplamları (Sum of Squares)
+
+- Her bir `\(i\)` gözlemi için `\(y_i = \hat{y}_i + \hat{u}_i\)`, her iki tarafın örneklem ortalamalarından farklarının karesini alıp toplarsak aşağıdaki büyüklükleri elde ederiz:
+
+- Toplam Kareler Toplamı (SST: Total Sum of Squares)
+`$$SST = \sum_{i=1}^n (y_i -\bar{y})^2$$`
+
+- Açıklanan Kareler Toplamı (SSE: Explained Sum of Squares)
+`$$SSE = \sum_{i=1}^n (\hat{y}_i -\bar{y})^2$$`
+
+- Kalıntı Kareleri Toplamı (SSR: Residual Sum of Squares)
+`$$SSR = \sum_{i=1}^n \hat{u}_i^2$$`
+
+
+---
+# Kareler Toplamları (Sum of Squares)
+
+- SST `\(y\)`'deki toplam değişkenliği verir.
+`$$SST = \sum_{i=1}^n (y_i -\bar{y})^2$$`
+Hatırlatma: `\(Var(y) = SST/(n-1)\)` 
+
+- Benzer şekilde SSE modelce açıklanan kısımdaki değişkenliği verir.
+`$$SSE = \sum_{i=1}^n (\hat{y}_i -\bar{y})^2$$`
+
+- SSR ise kalıntılardaki değişkenliğin bir ölçütüdür.
+`$$SSR = \sum_{i=1}^n \hat{u}_i^2$$`
+
+- `\(y\)`'deki toplam değişkenlik: `\(SST = SSE + SSR\)`
+
+
+---
+# Uyum İyiliği (Goodness-of-fit)
+
+- Tanım gereği `\(y\)`'deki toplam değişkenlik aşağıdaki gibi yazılabilir:
+`$$SST = SSE + SSR$$`
+
+- Bu ifadenin her iki tarafını SST'ye bölersek:
+`$$1 = \frac{SSE}{SST} + \frac{SSR}{SST}$$`
+
+- Açıklanan kısmın değişkenliğinin toplam değişkenlik içindeki payı regresyonun determinasyon (belirlilik) katsayısıdır ve `\(R^2\)` ile gösterilir:
+`$$R^2 = \frac{SSE}{SST} = 1 - \frac{SSR}{SST}$$`
+- SSE hiç bir zaman SST'den büyük olamayacağı için `\(0\leq R^2 \leq 1\)`
+- `\(R^2\)` `\(y\)`'deki değişkenliğin `\(x\)` tarafından açıklanan kısmının yüzdesini verir. Regresyonun açıklama gücü yükseldikçe `\(R^2\)` 1'e yaklaşır. `\(R^2\)` şu şekilde de hesaplanabilir: `\(R^2 = Corr(y,\hat{y})^2\)` 
+
+---
+name: nonlinear
+
+# Regresyon modelinin doğrusallığı
+`$$y = \beta_0 + \beta_1 x + u$$`
+
+- `\(y\)`: bağımlı değişken, - `\(x\)`: açıklayıcı değişken
+
+- Doğrusallık varsayımı bazı durumlarda kısıtlayıcı olabilir. 
+
+- Değişkenlerin uygun dönüştürmelerini kullanarak bu doğrusal olmayan ilişkileri yakalayabiliriz. 
+
+- Bu durumda model hala parametrelerde doğrusal olacaktır. 
+
+- En yaygın kullanılan dönüştürmeler (doğal) logaritma dönüştürmesi, karesel veya kübik terimler (genel olarak polinomlar), ters kalıp, vb.
+    
+    
+
+
+---
+# Doğrusal olmama
+
+.left-column[ 
+&lt;img src="img/fkaliplar.png" width="100%" style="display: block; margin: auto;" /&gt;
+ 
+]
+.right-column[
+- Kırmızı çizgi: tahmin edilen regresyon doğrusu. 
+
+- Hangi modeller uygun?
+]
+
+
+---
+# Log-level 
+
+.left-column[
+&lt;img src="img/loglevel.PNG" width="100%" style="display: block; margin: auto;" /&gt;
+]
+.right-column[
+- Orijinal model: `\(y = \exp(\beta_0 + \beta_1 x + u)\)`
+
+- Doğal logaritma dönüştürmesi: `\(\log y = \beta_0 + \beta_1 x + u\)`
+
+- `\(\beta_1\)`'in yorumu: `\(x\)` değişkenindeki 1 birim değişime karşılık `\(y\)`'de tahmin edilen değişim `\(\%(100\beta_1)\)`'dir. Not: `\(100\Delta\log y = \%\Delta y\)`
+]
+---
+# Level-log
+
+.left-column[
+&lt;img src="img/levellog.png" width="100%" style="display: block; margin: auto;" /&gt;
+]
+.right-column[
+- Dönüştürülmüş model: `\(y = \beta_0 + \beta_1 \log x + u\)`
+
+- `\(\beta_1\)`'in yorumu: `\(x\)`'deki %1 değişime karşılık `\(y\)`'de tahmin edilen değişim `\((\beta_1/100)\)` birimdir ( `\(y\)`'nin ölçü birimi cinsinden).
+]
+
+
+
+---
+# Log-log (Sabit esneklik modeli)
+
+.left-column[
+&lt;img src="img/loglog.png" width="90%" style="display: block; margin: auto;" /&gt;
+]
+.right-column[
+- Dönüştürülmüş model: `\(\log y = \beta_0 + \beta_1 \log x + u\)`
+
+- `\(\beta_1\)`'in yorumu: `\(x\)`'deki %1 değişime karşılık `\(y\)`'de tahmin edilen değişim % `\(\beta_1\)` kadardır. 
+
+- `\(\beta_1\)` = `\(y\)`'nin `\(x\)`'e göre esnekliği. 
+]
+
+
+---
+# OLS Tahmincilerinin Standart Hataları
+
+- Basit regresyon modelinde `\(Var(u)=\sigma^2\)` varsayımı altında (hata varyansının sabit olması) standart hatalar aşağıdaki formüllerden hareketle hesaplanabilir. 
+
+`$$\operatorname{se}\left(\hat{\beta}_{0}\right)^{2}=\sigma^{2}\left[\frac{1}{n}+\frac{\bar{x}^{2}}{\sum_{i=1}^{n}\left(x_{i}-\bar{x}\right)^{2}}\right]$$`
+
+`$$\operatorname{se}\left(\hat{\beta}_{1}\right)^{2}=\frac{\sigma^{2}}{\sum_{i=1}^{n}\left(x_{i}-\bar{x}\right)^{2}}$$`
+se = standart hata (standard error)
+
+- Bu standart hatalar hipotez testlerinde ve güven aralıklarının oluşturulmasında kullanılabilir. 
+
+---
+name: ttest
+
+# Hipotez Testleri 
+
+* Her zaman PRF ile ilgili: `\(Y=\beta_0 + \beta_1 X + u\)` 
+
+* Boş hipotez: `\(X\)` ile `\(Y\)` arasında bir ilişki yoktur. 
+`$$H_0: \beta_1 = 0$$` 
+
+* Alternatif hipotez: `\(X\)` ile `\(Y\)` arasında bir ilişki vardır.  
+`$$H_a: \beta_1 \neq 0$$`
+
+
+* `\(H_0\)` `\(t\)` testi ile sınanabilir. Boş hipotez altında `\(t\)` test istatistiği: 
+`$$t = \frac{\hat{\beta}_1-0}{\operatorname{se}\left(\hat{\beta}_{1}\right)}=\frac{\hat{\beta}_1}{\operatorname{se}\left(\hat{\beta}_{1}\right)}$$`
+
+* `\(X\)` ile `\(Y\)` arasında hiç bir ilişki yoksa (yani boş hipotez doğruysa) `\(t\)` istatistiği `\(n-2\)` serbestlik derecesiyle `\(t\)` dağılımına uyar.
+
+---
+# t-testi karar kuralı
+
+* Basit regresyon modelinde boş hipotez `\(H_0: \beta_1 = 0\)` ve alternatif `\(H_a: \beta_1 \neq 0\)` için t testi karar kuralı: 
+
+&gt; Verilmiş bir Tip-I hata olasılığı, `\(\alpha = Pr(|T|&gt;c_{\alpha/2}~|~H_0)\)`, için hesaplanan `\(t\)` istatistiğinin mutlak değeri kritik değer `\(c_{\alpha/2}\)`'den büyükse boş hipotez reddedilebilir. `$$t&gt;c_{\alpha/2}~~ \mbox{ya da}~~ t&lt;-c_{\alpha/2}~~\mbox{ise}~~H_0~~red$$`
+
+(Not: Burada `\(T\)`, `\(n-2\)` serbestlik derecesine sahip bir `\(t\)` rassal değişkenidir.)
+
+* Bir boş hipotezin doğru olup olmadığı pratikte hiç bir zaman bilinemez. İki tip hata yapılabilir. Bunların olasılıkları: 
+
+  * Tip-I hata olasılığı: `\(Pr(H_0~~ RED~|~H_0~DOĞRU)\)`.
+
+  * Tip-II hata olasılığı: `\(Pr(H_0~~ KABUL~|~H_0~YANLIŞ)\)`. Bu olasılığı pratikte belirleyemeyiz.
+
+---
+# p-değeri 
+
+* Her seferinde tablo kritik değerlerine bakmak yerine `\(\alpha\)`'yı elimizdeki örneklemden hareketle tahmin etmeye çalışabiliriz. 
+
+* `\(p\)`-değeri: Elimizdeki örneklemden hareketle aynı testi yapsak boş hipotezi kabul etmemizle sonuçlanacak en büyük anlamlılık düzeyi, `\(\alpha\)`, kaçtır? 
+
+* Örnek: `\(n-2=65\)`, hesaplanan `\(t\)` istatistiği `\(t=1.82\)` olsun. 
+`$$p-değeri=Pr(T&gt;1.82|H_0) + Pr(T&lt;-1.82|H_0) = 0.0367 + 0.0367 = 0.0734$$`
+
+```r
+2*pt(1.82, df=65, lower.tail = FALSE)
+```
+
+```
+## [1] 0.07336374
+```
+
+* `\(H_0\)`'ın reddi için en düşük anlamlılık düzeyi=%7.34. Bundan daha yüksek tüm `\(\alpha\)` düzeylerinde `\(H_0\)` RED. Örneğin, testi `\(\alpha=0.05\)` düzeyinde yaparsak boş hipotez reddedilemez. `\(p\)`-değeri ne kadar küçükse elimizdeki örneklemde boş hipotez aleyhine kanıt o kadar güçlü demektir.
+
+---
+# Örnek
+
+.pull-left[
+
+```r
+library(wooldridge)
+model1 &lt;- lm(wage ~ educ, data = wage1)
+broom::tidy(model1)
+```
+
+```
+## # A tibble: 2 × 5
+##   term        estimate std.error statistic  p.value
+##   &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;
+## 1 (Intercept)   -0.905    0.685      -1.32 1.87e- 1
+## 2 educ           0.541    0.0532     10.2  2.78e-22
+```
+Denklem formunda yazarsak:
+`$$\widehat{wage} = -0.905 + 0.54~ educ,~~~R^2 = 0.165$$`
+Standart hatalar: `\(se(\hat{\beta}_0)=0.685\)`, `\(se(\hat{\beta}_1)=0.0533\)`.
+]
+
+--
+
+.pull-right[
+- Eğim parametresi için t testi:  
+`$$t_{\beta_1} = \frac{0.54136}{0.05325} = 10.167 \sim~t(524)$$`
+- Karar: `\(H_0:\beta_1=0\)` boş hipotezi alternatif hipotez lehine reddedilir. Hesaplanan t istatistiği `\(\alpha=0.05\)` anlamlılık düzeyindeki kritik değerden daha büyüktür: `\(|t_{\beta_1}|&gt;1.96\)`. 
+
+- Eğitim düzeyi ücretler üzerinde istatistik bakımından anlamlı bir etkiye sahiptir. 
+- p değeri `\(\alpha=0.05\)` düzeyinden küçüktür (H0 red). 
+]
+
+
+
+
+
+
+
+
+
+
+
+
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script src="macros.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false,
+"ratio": "16:9"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+// add `data-at-shortcutkeys` attribute to <body> to resolve conflicts with JAWS
+// screen reader (see PR #262)
+(function(d) {
+  let res = {};
+  d.querySelectorAll('.remark-help-content table tr').forEach(tr => {
+    const t = tr.querySelector('td:nth-child(2)').innerText;
+    tr.querySelectorAll('td:first-child .key').forEach(key => {
+      const k = key.innerText;
+      if (/^[a-z]$/.test(k)) res[k] = t;  // must be a single letter (key)
+    });
+  });
+  d.body.setAttribute('data-at-shortcutkeys', JSON.stringify(res));
+})(document);
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

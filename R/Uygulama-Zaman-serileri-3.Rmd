@@ -1,0 +1,372 @@
+---
+title: 'Uygulama - Zaman Serileriyle Regresyon Analizi'
+author:
+  name: Prof. Dr. Hüseyin Taştan
+  affiliation: Yıldız Teknik Üniversitesi
+date: ""
+output:
+  html_document:
+    number_sections: yes
+    theme: readable
+    highlight: haddock
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+    keep_md: no
+  word_document:
+    toc: yes
+    toc_depth: '3'
+subtitle: Finansal Ekonometri (MPİ-TYL)
+---
+<style type="text/css"> 
+body{
+  font-size: 12pt;
+}
+code.r{
+  font-size: 12pt;
+}
+</style>
+
+```{r setup, include=FALSE}
+# knitr::opts_chunk$set(echo = TRUE, results = 'asis', fig.show = 'asis', fig.width = 3.5,                         fig.height = 3)
+knitr::opts_chunk$set(echo = TRUE)
+``` 
+
+# Statik ve Dinamik Modeller 
+
+## Örnek: Statik Phillips eğrisi 
+
+```{r message=FALSE, warning=FALSE}
+# Install packages
+library(wooldridge)
+library(dynlm)
+library(lmtest)
+library(car)
+library(forecast)
+library(tidyverse)
+```
+
+```{r}
+# create a ts object 
+inf <- ts(phillips$inf, start=1948, frequency = 1)
+unem <- ts(phillips$unem, start=1948, frequency = 1)
+# tüm veriler
+tsphillips <- ts(phillips, start=1948, frequency = 1)
+```
+
+```{r}
+# ts plots
+autoplot(inf, series = "Enflasyon") + 
+  autolayer(unem, series = "İşsizlik") +
+  xlab("") + ylab("") + 
+  ggtitle("ABD enflasyon ve işsizlik: 1948-2003")
+```
+
+
+```{r}
+# statik regresyon
+statik <- lm(inf ~ unem, data = phillips)
+summary(statik)
+```
+
+```{r}
+# dynlm paketi ile (yukarıda yüklemiştik) 
+res1 <- dynlm(inf ~ unem, data  = tsphillips)
+summary(res1)
+```
+
+Sonuçlar denklem formunda aşağıdaki gibi yazılabilir: 
+$$\widehat{inf} = 1.05+0.502~unem$$
+
+İşsizlikteki bir puanlık bir artış enflasyonu yaklaşık 0.5 puan arttırmaktadır. Bu sonuç Phillips eğrisi ile uyuşmamaktadır. 
+
+Kalıntıları inceleyelim: 
+```{r}
+# save the residuals from the static model
+uhat <- ts(resid(statik), start=1948, end=1996)
+# plot
+forecast::autoplot(uhat) + geom_point(aes(y=uhat)) +
+  geom_hline(yintercept = 0,linetype="dashed", color = "red") +
+  theme_minimal()
+```
+
+```{r}
+ggAcf(uhat)
+```
+
+
+ACF birinci gecikmede anlamlıdır. Kalıntılarda birinci derece otoregresif ilişki bulunmaktadır. Bunu t testi ile de sınayabiliriz: 
+
+```{r}
+# AR(1) 
+# dynlm paketi ile kalıntıların bir gecikme üzerine regresyonu: 
+ttestreg <- dynlm(uhat ~ L(uhat)) # L() gecikme işlemi
+coeftest(ttestreg)
+```
+
+L(uhat) katsayısı anlamlıdır. Statik modelin kalıntıları otokorelasyonludur. 
+
+
+## Örnek: Beklentilerle genişletilmiş Phillips eğirisi 
+
+Beklentilerle genişletilmiş Phillips eğrisine göre enflasyon sürprizleri ile işsizlik oranı arasında ters yönlü bir ilişki mevcuttur. Enflasyon sürprizi gerçekleşen enflasyon ile beklenen enflasyon arasındaki farktır. Beklenmeyen (sürpriz) enflasyonu ölçebilmemiz için beklentilerle ilgili bir varsayım yapmamız gerekir. Basitlik amacıyla beklentilerin bir önceki dönemdeki enflasyona göre oluşturulduğunu varsayalım. Böylece sürpriz enflasyon cari değerle bir önceki değer arasındaki fark olacaktır (değişim). Modelimiz: 
+$$inf_t - inf_{t-1} =\Delta inf_t =  \beta_0 + \beta_1 unem + u$$
+
+```{r}
+res2 <- dynlm( d(inf) ~ unem, data=tsphillips, end=1996)
+summary(res2)
+```
+
+$$\widehat{\Delta inf} = 3.03-0.54~unem$$
+
+```{r}
+uhat2 <- resid(res2) 
+coeftest( dynlm(uhat2 ~ L(uhat2)) )
+```
+L(uhat2) katsayısı istatistik bakımından anlamsızdır. Kalıntılarda otokorelasyon yoktur. 
+
+
+
+
+# VAR modelleri 
+
+## Örnek: BIST100 ve Döviz kurları
+```{r}
+# Aylık veriler
+load("../R/Data/bist_usd.rda")
+bist100 <- ts(bist_usd$bist100, start = c(2003,1), frequency = 12)
+usd <- ts(bist_usd$usd, start = c(2003,1), frequency = 12)
+# log birinci farklar
+dlbist100 <- 100*diff(log(bist100), 1)
+dlusd <- 100*diff(log(usd), 1)
+data_bist_usd <- cbind(dlbist100, dlusd)
+autoplot(data_bist_usd)
+```
+
+
+```{r}
+# vars paketini aktive edelim
+library(vars)
+# VAR gecikme uzunluğu (order) 
+VARselect(data_bist_usd, lag.max = 12)
+```
+
+
+Akaike bilgi kriterine (AIC) göre gecikme sayısı p=2 olarak seçildi. 
+
+```{r}
+var1 <- VAR(data_bist_usd, type="const", p = 2)
+var1
+```
+
+
+```{r}
+summary(var1)
+```
+
+
+```{r}
+# Serial korelasyon testi, kalıntılar white noise olmalı
+sertest <- serial.test(var1, lags.pt = 12, type = "PT.asymptotic")
+sertest
+plot(sertest, names = "dlbist100" ) 
+plot(sertest, names = "dlusd" )
+```
+
+
+```{r}
+# Granger nedensellik testi
+gc1 <- causality(var1, cause = "dlbist100")
+gc1
+```
+
+dlbist100 dlusd'nin Granger-nedeni değildir diyen boş hipotez %5 düzeyinde reddedilebilir (p-değeri = 0.046). Borsa endeksindeki aylık değişimler döviz kurlarındaki aylık değişimleri öngörmekte başarılıdır. 
+
+```{r}
+# Granger nedensellik testi
+gc2 <- causality(var1, cause = "dlusd")
+gc2
+```
+
+dlusd dlbist100'ün Granger-nedeni değildir diyen boş hipotez kabul edilebilir (p değeri 0.5195). Döviz kurlarındaki değişim borsa endeksindeki değişimleri öngörmekte başarılı değildir. 
+
+
+VAR modeliyle öngörü: 
+```{r}
+forecast(var1, h=12) %>% autoplot()
+```
+
+
+
+# Uygulama: Konut fiyatları ve faiz ilişkisi
+
+Konut kredi faiz oranı ile konut fiyatları arasında yakın bir ilişki bekleriz. Reel faiz oranlarında bir azalma konut talebini arttırır. Kısa vadede konut arzı sabit olduğundan fiyatlar üzerinden yukarı yönlü bir baskı oluşur. Tersi durumda reel faizlerin artması ise genelde konut fiyatlarında bir azalmaya yol açmasa da enflasyonun üzerinde bir değer artışını baskılayabilir. Öyleyse, diğer herşey aynıyken konut fiyatı ile reel faizler arasında negatif yönlü bir ilişki bekleyebiliriz. Ayrıca bu iki değişken birbirini öngörmede başarılı olabilir. 
+
+## Verilerin okutulması ve grafiksel analiz
+
+```{r message=FALSE, warning=FALSE} 
+library(tidyverse) 
+library(forecast)
+```
+
+
+```{r message=FALSE, warning=FALSE} 
+# verileri yükle: 
+load("../R/Data/faiz_kfe_veri.RData")
+head(faiz_kfe_veri)
+```
+
+Veri seti 2010.01-2020.09 dönemini kapsıyor ve dört değişkenden oluşuyor: `kfe_tr`: Türkiye için konut fiyat endeksi (Kaynak: TCMB); `faiz`: ortalama konut kredisi faiz oranı (Kaynak: TCMB), `tufe_tr`: Tüketici Fiyat Endeksi (Kaynak: TÜİK); `enf_aa`: aydan aya TUFE büyüme oranı, `enfa_yy`: yıldan yıla TUFE büyüme oranı. `kfe_tr` ve `tufe_tr` başlangıç değeri 100 olacak şekilde orantılandırıldı. 
+
+Verilerin zaman seriği grafiğini çizelim: 
+```{r}
+autoplot(faiz_kfe_veri[, c("kfe_tr", "tufe_tr")]) + 
+  xlab("") + ylab("") +
+  ggtitle("Konut fiyat endeksi ve TUFE")
+```
+
+Konut fiyat endeksi (KFE) ve TUFE 2010-2013 arasında yaklaşık olarak aynı oranlarda artış gösterirken daha sonraki dönemde konut fiyatlarının reel olarak arttığını görüyoruz. Enflasyon etkisini arındırmak için konut fiyat endeksini TUFE'ye bölebiliriz: 
+```{r}
+kfe_tr <- faiz_kfe_veri[, "kfe_tr"]
+tufe_tr <- faiz_kfe_veri[, "tufe_tr"]
+# reel konut fiyat endeksi: 
+rkfe_tr <- kfe_tr/tufe_tr
+autoplot(rkfe_tr) +
+  xlab("") + ylab("KFE/TUFE") + 
+  ggtitle("Reel Konut Fiyat Endeksi")
+```
+
+Konut kredisi faiz oranlarına bakalım: 
+```{r}
+autoplot(faiz_kfe_veri[, c("faiz", "enf_yy")]) + 
+  xlab("") + ylab("") +
+  ggtitle("Konut kredi faiz oranları ve yıllık enflasyon")
+```
+
+Reel faiz oranları 
+```{r}
+faiz <- faiz_kfe_veri[, "faiz"]
+enf_yy <- faiz_kfe_veri[, "enf_yy"] 
+# ex post reel faiz
+rfaiz <- faiz-enf_yy 
+autoplot(rfaiz) +
+  geom_hline(yintercept=0, linetype=2) + 
+  theme_bw() +
+  xlab("") + ylab("") +
+  ggtitle("Reel faiz oranları")
+
+# rfaiz2 = ((1+faiz/100)/(1+enf_yy/100)) - 1
+# autoplot(cbind(faiz,100*rfaiz2))
+```
+
+## Konut kredi faizleri ve fiyatlar durağan mı? 
+
+Konut fiyatlarının faiz oranı üzerine regresyonunu kuralım. Regresyon modeli için `R`'ın `lm()` fonksiyonunu kullanabiliriz. Zaman serisi için daha fazla tercih sunan `forecast::tslm()` fonksiyonunu da kullanabiliriz: 
+```{r}
+# yeni bir ts veri seti oluştur
+tsdata <- cbind(rkfe_tr, faiz, enf_yy, rfaiz)
+# log-level modeli tahmin et 
+fit1 <- tslm(log(rkfe_tr) ~ rfaiz, data=tsdata)
+summary(fit1)
+```
+Bu sonuçlara göre reel faiz oranları (rfaiz) istatistik bakımından anlamsızdır. Ancak hatırlarsak zaman serileriyle regresyon sonuçlarının durağan olmama, güçlü otokorelasyon gibi nedenlerden dolayı yanlış sonuçlar verebileceğini söylemiştik. Bunu kalıntıların grafiğinden de görebiliriz: 
+```{r}
+uhat <- resid(fit1)
+checkresiduals(fit1)
+```
+
+
+Kalıntıların ACF değerleri çok yüksek ve güçlü bağımlılığa işaret ediyor. Değişkenler durağan olmayabilir. 
+
+Birim kök testlerini hesaplayalım: 
+```{r}
+# Birim kök testleri 
+library(urca)
+# log reel KFE
+adf1 <- ur.df(log(rkfe_tr) , type = c("drift"), lags=6, selectlags="AIC")
+summary(adf1)
+```
+ADF test istatistiği $-1.43$ ve %5 düzeyindeki kritik değerden $-2.88$ büyük. Konut fiyat endeksinin durağan olmadığını söyleyen boş hipotez reddedilemez (sol kuyruk testi). Seri durağan değildir. 
+
+Acaba trend eklediğimizde de aynı sonuç mu çıkıyor? Bu durumda alternatif hipotez serinin trend-durağan olduğunu söyler. 
+
+```{r}
+# sabit+trend 
+adf2 <- ur.df(log(rkfe_tr) , type = c("trend"), lags=6, selectlags="AIC")
+summary(adf2)
+```
+
+$ADF=-2.027$ değeri dağılımın kabul bölgesinde, boş hipotez reddedilemez. Sabit ve trend modelinde de seri durağan değildir. 
+
+Serinin birinci farkını aldığımızda durağanlaşıyor mu? 
+```{r}
+# Her iki durumda da durağan değil
+# birinci farkı alınca durağanlaşıyor mu
+adf3 <- ur.df(diff(log(rkfe_tr)) , type = c("drift"), lags=6, selectlags="AIC")
+summary(adf3) 
+```
+
+Bu durumda $ADF=-4.51$ ve bu %1 düzeyindeki kritik değerden küçüktür. Öyleyse serinin durağan olmadığını söyleyen boş hipotez reddedilir. Konut fiyat endeksinin büyüme oranı durağandır (logaritmik birinci fark büyüme oranını verir). Farkın grafiği ve korelogramı aşağıdaki gibidir: 
+```{r}
+dlrkfe <- 100*diff(log(kfe_tr))
+ggtsdisplay(dlrkfe) 
+```
+
+
+Reel faizler durağan mı? 
+```{r}
+adf4 <- ur.df(rfaiz, type = c("drift"), lags=6, selectlags="AIC")
+summary(adf4)
+```
+
+ADF test istatistiği $-3.62$ ve bu değer %1 kritik değerden küçük (mutlak olarak büyük). Bu nedenle boş hipotez reddedilir. Faiz serisi durağandır. 
+
+Özetlersek KFE serisi seviyede durağan değil ancak birinci farkı durağan. Reel faizler ise seviyede durağan. Bu durumda takip edilebilecek bir yol KFE serisinin birinci farkı ile faizler arasında bir dinamik model kurmaktır. Bu amaçla VAR modelleri kullanılabilir. 
+
+
+## VAR Modeli ve Granger-nedensellik analizi
+```{r}
+# birinci farkı alınca bir gözlem kaybı nedeniyle dönem tanımı: 
+dlrkfe <- window(dlrkfe, start=c(2010,2), end=c(2020,9))
+rfaiz <- window(rfaiz, start=c(2010,2), end=c(2020,9))
+# veri seti oluştur 
+tsdata <- cbind(dlrkfe, rfaiz)
+autoplot(tsdata)
+```
+
+
+```{r message=FALSE, warning=FALSE}
+library(vars)
+var1 <- VAR(tsdata, type="const", lag.max = 6, ic="AIC")
+summary(var1)
+```
+
+Gecikme uzunluğu AIC kriterine göre 3 olarak belirlendi. Ayrıca bkz: 
+
+```{r}
+VARselect(tsdata, lag.max = 6, type = "const")
+```
+
+
+Reel faizler ev fiyatlarındaki reel artışların Granger-nedeni midir?
+```{r}
+# Granger causality
+# H0: reel faizler ev fiyatlarının Granger-nedeni değildir
+causality(var1, cause = "rfaiz")
+```
+
+Test istatistiği F-Test = 0.18815 ve p-değeri 0.90 olarak hesaplandı. Buna göre boş hipotez reddedilemez. Reel faizler konut fiyat artışlarının Granger-nedeni değildir. Bir başka ifadeyle reel faizler reel konut fiyat artışlarını öngörmede başarılı değildir. Konut fiyat artışlarını etkileyen ve öngörmede daha başarılı olacak faktörlerin modele eklenmesi gerekir. 
+
+Ev fiyatlarındaki reel artışlar konut kredi faizinin Granger-nedeni midir?
+```{r}
+# H0: ev fiyatları reel faizlerin Granger-nedeni değildir
+causality(var1, cause = "dlrkfe")
+```
+
+Test istatistiği F-Test = 2.6869 ve p-değeri=0.047. Zayıf olsa da boş hipotez aleyhinde kanıt mevcut diyebiliriz (%5 anlamlılık düzeyinde). Öyleyse, en azından bu basit modelde, ev fiyatlarındaki reel artışlar reel faizleri öngörmede başarılı olduğu söylenebilir. 
+
+
+
+
+
+<div class="tocify-extend-page" data-unique="tocify-extend-page" style="height: 0;"></div>

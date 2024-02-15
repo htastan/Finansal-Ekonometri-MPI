@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Temel Kavramlar</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Prof. Dr. Hüseyin Taştan" />
+    <script src="libs/header-attrs-2.23/header-attrs.js"></script>
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/metropolis.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+.title[
+# Temel Kavramlar
+]
+.subtitle[
+## Finansal Ekonometri
+]
+.author[
+### Prof. Dr. Hüseyin Taştan
+]
+.institute[
+### Yıldız Teknik Üniversitesi - MP İktisat TYL Programı
+]
+
+---
+
+class: my-medium-font
+
+&lt;style type="text/css"&gt;
+.remark-slide-content {
+    font-size: 25px;
+    padding: 1em 4em 1em 4em;
+}
+.my-large-font {
+  font-size: 40px;
+}
+.my-small-font {
+  font-size: 20px;
+}
+.my-medium-font {
+  font-size: 30px;
+}
+&lt;/style&gt;
+
+
+
+
+
+# Plan
+
+- [Finansal Varlıklar](#fvarliklar)
+
+- [Paranın zaman değeri, bileşik faiz](#zaman)
+
+- [Nominal ve reel değer](#reel)
+
+- [Finansal varlık getirileri](#getiri)
+
+- [Getiriler ve Normal dağılım](#normal)
+
+
+---
+name: fvarliklar
+
+# Finansal Varlıklar 
+
+- Ticarete konu olan her şey bir "varlık (asset)" olarak tanımlanabilir. Örneğin, nakit (TL), yabancı para, şirket payları, tahvil ve bonolar, gayrimenkuller ve ilgili yatırım payları, vs. 
+
+- Finansal varlıkların belirli bir süredeki getirileri tanımlanabilir. Bu getiriler faiz ve kar payı şeklinde olabilir ve genellikle varlığın başlangıçtaki değerine oranlanarak ifade edilebilir. 
+
+- İlgili dönemde finansal varlığın fiyatında da değişme olabilir. Toplam getiri fiyat değişimi ile getirinin (yield) toplanması ile bulunabilir.   
+
+- Risk bir finansal varlığın fiyatında ve/veya getirisindeki değişkenliği ifade eder. Örneğin cebinizdeki nakit tutuyorsanız fiyatlar genel düzeyindeki artışlar (enflasyon) sizin için bir risk faktörüdür. 
+
+- Risksiz (risk-free) varlık var mıdır? (örneğin Amerikan tahvilleri?)
+
+
+---
+name: zaman 
+
+# Paranın Zaman Değeri 
+
+- Elimizde `\(D\)` Türk Lirası (TL) tutarında bir fon olsun ve bunu 1 yıllığına `\(R\)` oranıyla bankaya yatıralım (Faiz ya da getiri oranı `\(R\)`, 0 ile 1 arasında bir sayı olarak ifade edilsin, örneğin 0.1). Bir yıl sonraki nominal değer
+`$$GD_1 = D\times(1+R) = D + D\times R$$`
+olur. Bunu olduğu gibi tekrar aynı faiz oranıyla yatırırsak ikinci yılın sonunda değeri 
+`$$GD_2 = D\times(1+R) \times(1+R)= D \times(1+R)^2$$`
+olur. 
+
+- Daha genel olarak `\(n\)` yılın sonunda 
+`$$GD_n = D\times(1+R) \times(1+R)\ldots \times(1+R)= D(1+R)^n$$`
+olacaktır. 
+
+---
+# Örnek: 
+
+- Faiz oranı %10 olsun, yatırım tutarı ise 10000TL olsun. 
+
+- İlk beş yılın ve onuncu yılın sonunda gelecek değerini R programını kullanarak hesaplayalım. 
+.pull-left[
+
+```r
+D = 10000 
+R = 0.1 
+GD1 = D*(1 + R)  
+GD2 = D*(1 + R)^2
+GD3 = D*(1 + R)^3
+GD4 = D*(1 + R)^4
+GD5 = D*(1 + R)^5
+GD10 = D*(1 + R)^10
+gd &lt;- data.frame(t = c(1,2,3,4,5,10), 
+             gelecek_deger = c(GD1, GD2, GD3, GD4, GD5, GD10))
+gd
+```
+]
+
+.pull-right[
+Yandaki komutların çıktısı: 
+
+```
+##    t gelecek_deger
+## 1  1      11000.00
+## 2  2      12100.00
+## 3  3      13310.00
+## 4  4      14641.00
+## 5  5      16105.10
+## 6 10      25937.42
+```
+]
+
+
+---
+# Şimdiki Değer 
+
+- `\(GD_n = D(1+R)^n\)` formülünden hareketle şimdiki değeri kolayca bulabiliriz: 
+$$
+ D =\frac{G D_{n}}{(1+R)^{n}}
+$$
+- Verilmiş bir `\(D\)` ve `\(GD_n\)` için getiri oranını da bulabiliriz: 
+$$
+R=\left(\frac{GD_{n}}{D}\right)^{1 / n}-1
+$$
+
+---
+# Bileşik Faiz 
+
+
+```r
+C = 1    # yatırım tutarı
+r = 0.12 # yıllık faiz oranı (bileşik)
+m = c(1,2,4,12,52,365) # ödeme sayısı
+donemlik_faiz_oranı = r/m
+faiz_tipi = c("Yıllık", "Yılda iki kere", "Çeyreklik", 
+              "Aylık", "Haftalık", "Günlük")
+net_deger = C*(1+r/m)^m
+df &lt;- data.frame(faiz_tipi, m, donemlik_faiz_oranı, net_deger)
+df
+```
+
+```
+##        faiz_tipi   m donemlik_faiz_oranı net_deger
+## 1         Yıllık   1        0.1200000000  1.120000
+## 2 Yılda iki kere   2        0.0600000000  1.123600
+## 3      Çeyreklik   4        0.0300000000  1.125509
+## 4          Aylık  12        0.0100000000  1.126825
+## 5       Haftalık  52        0.0023076923  1.127341
+## 6         Günlük 365        0.0003287671  1.127475
+```
+
+---
+# Bileşik faiz 
+
+`\(m\)` arttıkça net değer `\(A\)`, `\(100*\exp(r)\)` değerine yaklaşır. Daha genel olarak `\(C\)` tutarında bir yatırım için net değer 
+`$$A = C \exp(r\times n) = Ce^{r.n}$$` 
+olur. Burada `\(r\)` bileşik faiz oranı, `\(n\)` yıl sayısıdır. `\(A\)` biliniyorsa şimidiki değeri hesaplamak için 
+`$$C = A \exp(-r\times n) = Ae^{-r.n}$$` 
+
+---
+# Bileşik getiri oranı 
+
+- `\(t\)` zamanındaki fiyatı `\(P_t\)` olan bir varlığın `\(t-1\)` zamanından `\(t\)`'ye brüt getiri oranı
+`$$1+R_t = \frac{P_t}{P_{t-1}}, ~~~~ R_t = \frac{P_t-P_{t-1}}{P_{t-1}}$$`
+
+- `\(R_t\)`'nin doğal logaritmasına sürekli bileşik getiri ya da log-getiri adı verilir: 
+`$$r_t = \ln(1+R_t) = \ln \frac{P_t}{P_{t-1}} = \ln P_t - \ln P_{t-1}$$`
+
+- `\(P_t\)` hisse senedinin fiyatı ise ve `\(t\)` zamanında `\(D_t\)` tutarında bir kar payı ödemesi yapılmışsa, basit ve bileşik getiri oranları aşağıdaki formüllerle hesaplanabilir: 
+`$$R_t = \frac{P_t + D_t}{P_{t-1}}-1$$`
+`$$r_t = \ln (P_t + D_t) - \ln (P_{t-1})$$`
+
+
+---
+name: reel
+
+# Nominal ve reel değer 
+
+- Nominal fiyatlardan enflasyonun etkisini arındırmak için deflate etmemiz gerekir: 
+`$$reel~fiyat_t = \frac{Nominal~fiyat_t}{Deflatör_t}$$`
+- Burada deflatör genellikle bir fiyat endeksi olarak tanımlanır (TÜFE gibi)
+
+- Örnek: İstanbul'da 2020-Ocak-2021-Temmuz döneminde konut fiyat endeksi (baz yılı 2017=100) ve Tüketici fiyat endeksi (baz yılı 2003=100)
+
+- 2021 yılı Ocak ayında konut fiyat endeksi (KFE) 107.40 değerinden 2021 yılı Temmuz ayında 156.80 değerine ulaşmıştır. Nominal fiyat artışı 
+`$$100\times\frac{156.80-107.40}{107.40}= 45.99628$$`
+yaklaşık %46'dır. 
+
+
+---
+# İstanbul'da Reel Konut Fiyatları
+
+
+- Aynı dönemde TÜFE'deki artış ise 
+`$$100\times\frac{556.97-449.78}{449.78}= 23.83165$$`
+yaklaşık % 23.8 olmuştur. 
+
+- Reel konut fiyat artışı için 2020-Ocak ayında deflate edilmiş **KFE = 100*(107.40/449.78) = 23.87834**, 2021-Temmuz ayında deflate edilmiş **KFE = 100*(156.8/556.97) = 28.15232** olur. 
+
+- Reel artış buradan 
+`$$100\times\frac{28.15232-23.87834}{23.87834}= 17.89898$$`
+
+yaklaşık %17.9 olarak bulunur. 
+
+---
+# İstanbul'da Reel Konut Fiyatları
+
+```r
+yil &lt;- c(rep(2020,12), rep(2021,7))
+ay &lt;- c(1:12,1:7)
+KFE_Istanbul &lt;- c(107.40, 109.80, 111.20, 113.10, 117.60, 120.80, 122.40, 125.10, 
+                  128.20, 131.40, 133.50, 135.20, 137.20, 140.30, 143.20, 145.30,
+                  149.30, 152.70, 156.80)
+KFE_Istanbul2 &lt;- KFE_Istanbul/107.4
+TUFE_Istanbul &lt;- c(449.78, 451.55, 454.47, 457.96, 463.61, 469.01, 472.49, 476.93, 
+                   481.00, 491.09, 502.02, 507.60, 517.25, 521.60, 526.47, 534.50,
+                   538.85, 548.27, 556.97)
+TUFE_Istanbul2 &lt;- TUFE_Istanbul/449.78
+RKFE &lt;- 100*KFE_Istanbul/TUFE_Istanbul
+RKFE2 &lt;- 100*KFE_Istanbul2/TUFE_Istanbul2
+KFE &lt;- data.frame(yil, ay, KFE_Istanbul, TUFE_Istanbul, RKFE, KFE_Istanbul2, TUFE_Istanbul2, RKFE2)
+```
+
+---
+# İstanbul'da Reel Konut Fiyatları
+
+![](img/kfe1.PNG)
+
+
+---
+# İstanbul'da KFE ve TUFE 
+
+
+
+![](img/kfe3.PNG)
+
+
+---
+# İstanbul'da Reel Konut Fiyatları
+
+
+
+
+![](img/kfe2.PNG)
+
+---
+name: getiri 
+
+# Finansal getiriler
+
+- Varlık getirilerini daha önce tanımlamıştık. 
+
+- Basit getiri varlığın şimdiki değeri ile geçmişteki değerleri arasındaki fark olarak tanımlanır. Örneğin `\(t\)` zamanındaki fiyat ile `\(t-1\)`, yani bir dönem önceki fiyat arasındaki fark olarak tanımlanır: 
+`\(d_t = P_t-P_{t-1}\)`
+
+- Göreli getiri varlık fiyatında belirli bir dönemde meydana gelen değişmenin dönem başındaki değere oranıdır. Örneğin `\(t-1\)`'den `\(t\)`'ye 1 dönemdeki göreli getiri
+`$$R_t = \frac{P_t-P_{t-1}}{P_{t-1}}$$`
+
+- Logaritmik getiri ise varlık fiyatının logaritmik farkı olarak tanımlamıştık. Örneğin 
+`$$r_t = \ln (P_t) - \ln (P_{t-1}) \approx \frac{P_t-P_{t-1}}{P_{t-1}}$$`
+Göreli getiri ve log getiriler 100 ile çarpılarak yüzde olarak da ifade edilebilir. 
+
+---
+# Örnek: BIST100 tarihsel getiriler
+.pull-left[
+
+```r
+library(xts)
+load("../R/Data/bist100xts.rda")
+head(BIST100, 5) # ilk 5 gözlem
+```
+
+```
+##            BIST100
+## 1987-10-23  0.0823
+## 1987-10-26  0.0840
+## 1987-10-27  0.0827
+## 1987-10-28  0.0813
+## 1987-10-30  0.0786
+```
+
+```r
+tail(BIST100, 5) # son 5 gözlem
+```
+
+```
+##            BIST100
+## 2021-09-23 1401.46
+## 2021-09-24 1384.68
+## 2021-09-27 1391.74
+## 2021-09-28 1383.77
+## 2021-09-29 1391.92
+```
+]
+
+.pull-right[
+
+```r
+plot(BIST100)
+```
+
+![](Temelk_files/figure-html/unnamed-chunk-7-1.png)&lt;!-- --&gt;
+] 
+
+---
+# Örnek: BIST100 tarihsel getiriler
+
+.pull-left[
+2003-2018 yılları arasına bakalım: 
+
+```r
+BIST100_2003_2018 &lt;- BIST100["2003/2018"] 
+tail(BIST100_2003_2018, 5) # son 5 gözlem
+```
+
+```
+##             BIST100
+## 2018-12-24 915.2690
+## 2018-12-25 908.2957
+## 2018-12-27 909.7479
+## 2018-12-28 904.3533
+## 2018-12-31 912.7048
+```
+]
+
+.pull-right[
+
+```r
+plot(BIST100_2003_2018)
+```
+
+![](Temelk_files/figure-html/unnamed-chunk-9-1.png)&lt;!-- --&gt;
+]
+
+---
+# Örnek: BIST100 tarihsel getiriler
+.pull-left[
+
+```r
+# 1 günlük basit getiriler (birinci farklar) 
+basit_getiri &lt;- diff(BIST100)
+head(basit_getiri, 5) # ilk 5 gözlem
+```
+
+```
+##            BIST100
+## 1987-10-23      NA
+## 1987-10-26  0.0017
+## 1987-10-27 -0.0013
+## 1987-10-28 -0.0014
+## 1987-10-30 -0.0027
+```
+
+```r
+tail(basit_getiri, 5) # son 5 gözlem
+```
+
+```
+##            BIST100
+## 2021-09-23   -6.00
+## 2021-09-24  -16.78
+## 2021-09-27    7.06
+## 2021-09-28   -7.97
+## 2021-09-29    8.15
+```
+]
+
+.pull-right[
+
+```r
+plot(basit_getiri)
+```
+
+![](Temelk_files/figure-html/unnamed-chunk-11-1.png)&lt;!-- --&gt;
+] 
+
+---
+# Örnek: BIST100 tarihsel getiriler
+.pull-left[
+
+```r
+# 1 günlük göreli getiriler
+lag1 &lt;- lag(BIST100, 1) # birinci gecikme
+head(lag1, 4)
+```
+
+```
+##            BIST100
+## 1987-10-23      NA
+## 1987-10-26  0.0823
+## 1987-10-27  0.0840
+## 1987-10-28  0.0827
+```
+
+```r
+goreli_getiri &lt;- (BIST100 - lag1)/lag1
+head(goreli_getiri, 4)
+```
+
+```
+##                BIST100
+## 1987-10-23          NA
+## 1987-10-26  0.02065614
+## 1987-10-27 -0.01547619
+## 1987-10-28 -0.01692866
+```
+]
+
+.pull-right[
+
+```r
+plot(goreli_getiri)
+```
+
+![](Temelk_files/figure-html/unnamed-chunk-13-1.png)&lt;!-- --&gt;
+] 
+
+---
+# Örnek: BIST100 tarihsel getiriler
+.pull-left[
+
+```r
+# 1 günlük logaritmik getiriler
+log_bist &lt;- log(BIST100)
+log_getiri &lt;- log_bist - lag(log_bist, 1)
+head(log_getiri)
+```
+
+```
+##                BIST100
+## 1987-10-23          NA
+## 1987-10-26  0.02044569
+## 1987-10-27 -0.01559720
+## 1987-10-28 -0.01707359
+## 1987-10-30 -0.03377432
+## 1987-11-02 -0.02708096
+```
+100 ile çarpılarak yüzde olarak da ifade edilebilir. 
+]
+
+.pull-right[
+
+```r
+plot(log_getiri)
+```
+
+![](Temelk_files/figure-html/unnamed-chunk-15-1.png)&lt;!-- --&gt;
+] 
+
+---
+# Örnek: BIST100 tarihsel getiriler
+.pull-left[
+
+```r
+# 1 günlük yüzde getiriler
+log_getiri100 &lt;- 100*(log_bist - lag(log_bist, 1))
+head(log_getiri100)
+```
+
+```
+##              BIST100
+## 1987-10-23        NA
+## 1987-10-26  2.044569
+## 1987-10-27 -1.559720
+## 1987-10-28 -1.707359
+## 1987-10-30 -3.377432
+## 1987-11-02 -2.708096
+```
+]
+
+.pull-right[
+
+```r
+plot(log_getiri100)
+```
+
+![](Temelk_files/figure-html/unnamed-chunk-17-1.png)&lt;!-- --&gt;
+] 
+
+---
+# Getirilerin toplulaştırılması 
+
+- Günlük logaritmik getirilerden hareketle haftalık ya da aylık getiriler hesaplanabilir. 
+
+- `\(r_t\)` günlük varlık fiyatlarından hareketle hesaplanan log getiri olsun. 5 günlük log getirileri hesaplamak istersek 
+`$$\ln (P_{t-5}) - \ln (P_{t})=\sum_{i=1}^5r_{t+i}$$`
+ilgili dönem içindeki günlük log getirileri toplamamız yeterli olur. 
+
+- Benzer şekilde aylık getirileri hesaplamak istersek o ay içindeki günlük logaritmik getirileri toplayabiliriz. 
+
+
+---
+# Örnek: BIST100 haftalık ve aylık getiriler 
+.pull-left[
+
+```r
+# haftalık log getiriler
+log_getiri100_h &lt;- apply.weekly(log_getiri100, sum)
+head(log_getiri100_h, 4)
+```
+
+```
+##               BIST100
+## 1987-10-23         NA
+## 1987-10-30  -4.599941
+## 1987-11-06 -18.537966
+## 1987-11-13 -14.475140
+```
+
+```r
+tail(log_getiri100_h, 4)
+```
+
+```
+##               BIST100
+## 2021-09-10 -2.0603400
+## 2021-09-17 -1.3498447
+## 2021-09-24 -2.4786317
+## 2021-09-29  0.5215023
+```
+]
+
+.pull-right[
+
+```r
+plot(log_getiri100_h)
+```
+
+![](Temelk_files/figure-html/unnamed-chunk-19-1.png)&lt;!-- --&gt;
+] 
+
+---
+# Örnek: BIST100 haftalık ve aylık getiriler 
+.pull-left[
+
+```r
+# aylık log getiriler
+log_getiri100_a &lt;- apply.monthly(log_getiri100, sum)
+head(log_getiri100_a, 4)
+```
+
+```
+##              BIST100
+## 1987-10-30        NA
+## 1987-11-30  12.53876
+## 1987-12-31 -28.05991
+## 1988-01-29  24.28588
+```
+
+```r
+tail(log_getiri100_a, 4)
+```
+
+```
+##              BIST100
+## 2021-06-30 -4.621199
+## 2021-07-30  2.660519
+## 2021-08-31  5.527449
+## 2021-09-29 -5.598548
+```
+]
+
+.pull-right[
+
+```r
+plot(log_getiri100_a)
+```
+
+![](Temelk_files/figure-html/unnamed-chunk-21-1.png)&lt;!-- --&gt;
+] 
+
+
+---
+name: normal 
+
+# Normal Dağılım 
+
+- Finansta kullanılan bazı modeller (örneğin Black-Scholes) varlık fiyatlarının geometrik Brownian Motion sürecini takip ettiğini varsayar. 
+
+- Bu varsayım altında log getiriler normal dağılıma uyar ve bağımsızdır. 
+
+- Eğer rassal değişken `\(X\)` normal dağılımı uyuyorsa, yani `\(X\sim~N(\mu,~\sigma^2)\)` ise, bu dağılımı ortalama `\(\mu\)` ve varyans `\(\sigma^2\)` ile betimleyebiliriz. 
+
+- `\(\mu\)` dağılımın merkezini gösteren lokasyon parametresidir. 
+
+- `\(\sigma^2\)` ise merkez çevresindeki değişkenliği gösteren varyans parametresidir. 
+
+- Veriler ortalama çevresinde çan eğrisi biçiminde ve simetrik dağılır. Verilerin yaklaşık `\(\%95\)`'i 2 standart sapma ( `\(\sigma\)` ) içinde yer alır.  
+
+- Acaba log getiriler gerçekten de normal dağılıma uyuyor mu? Bunun için görsel araçlar ya da hipotez testlerini kullanabiliriz. 
+
+---
+# Normal dağılım
+.pull-left[
+![](img/norm1.PNG)
+`\(Z\sim~N(0,1)\)`: ortalaması 0 ve varyansı 1 olan normal dağılımın histogramı ve yoğunluk fonksiyonu tahmini (kırmızı çizgi)
+]
+
+.pull-right[
+![](img/norm2.PNG)
+x-ekseninde teorik kantiller y-ekseninde z değişkeninin kantilleri gösterilmiştir. Noktaların çizgi üzerinde hizalanması verilerin dağılımının normal dağılıma uyduğunu gösterir. 
+] 
+
+---
+# Normal dağılım
+Normal dağılımın parametreleri: ortalama ve varyans
+.pull-left[
+![](img/norm3.PNG)
+Farklı ortalamalar, aynı varyans: bu durumda normal dağılım şeklini bozmadan sağa ve sola kayar. 
+]
+
+.pull-right[
+![](img/norm4.PNG)
+Farklı varyanslar, aynı ortalama: bu durumda varyans arttıkça dağılım daha yayvan/yayık hale gelir. Merkez (ortalama) aynı kalır. 
+] 
+
+---
+# 2003 sonrası BIST100 getirileri 
+ 02/01/2003 - 29/09/2021 arası günlük getirilerin histogramı ve QQ grafiği. Bu dönemde ortalama günlük getiri %0.0553 standart sapma ise 1.6876 olarak gerçekleşti. 
+.pull-left[ 
+![](img/norm5.PNG)
+Günlük getiriler normal dağılıma göre daha sivri bir dağılıma sahip. Ekstrem değerlerin gerçekleşme olasılığı daha yüksek
+]
+
+.pull-right[
+![](img/norm6.PNG)
+Getiri dağılımı normal dağılım ile örtüşmüyor. Özellikle kuyruklarda farklılıklar var. Getiri dağılımı daha kalın kuyruklu. 
+] 
+
+---
+# Getirilerin dağılımı 
+
+- Varlık getirileri normal dağılıma uymayabilir. Getirilerin dağılımı genellikle normal dağılıma göre daha kalın kuyruklu (leptokurtic) olur. 
+
+- Dağılımın simetrisini **skewness** katsayısı ile basıklığını ise **kurtosis** katsayısı ile ölçebiliriz. Normal dağılım için skewness=0, kurtosis=3 değerini alır. 
+
+- Getiri dağılımında kurtosis&gt;3 ise kuyruklar normale göre daha kalındır (leptokurtosis). 
+
+- Bu nedenle getirilerin modellenmesinde, normal dağılıma göre daha kalın kuyruklu dağılımların  kullanılması önerilmiştir (örneğin t dağılımı)
+
+- Normallik sınamaları için çok sayıda test geliştirilmiştir. Bunları daha sonra göreceğiz. 
+
+- Ayrıca getiri serilerinin özelliklerini daha detaylı olarak inceleyeceğiz. Getirilerin geçmiş değerlerden hareketle öngörülebilir olup olmadığını izleyen derslerde ele alacağız. 
+
+
+
+
+
+
+
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script src="macros.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false,
+"ratio": "16:9"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+// add `data-at-shortcutkeys` attribute to <body> to resolve conflicts with JAWS
+// screen reader (see PR #262)
+(function(d) {
+  let res = {};
+  d.querySelectorAll('.remark-help-content table tr').forEach(tr => {
+    const t = tr.querySelector('td:nth-child(2)').innerText;
+    tr.querySelectorAll('td:first-child .key').forEach(key => {
+      const k = key.innerText;
+      if (/^[a-z]$/.test(k)) res[k] = t;  // must be a single letter (key)
+    });
+  });
+  d.body.setAttribute('data-at-shortcutkeys', JSON.stringify(res));
+})(document);
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

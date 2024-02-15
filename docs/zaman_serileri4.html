@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Durağan Olmayan Zaman Serileri ve Eşbütünleşme</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Prof. Dr. Hüseyin Taştan" />
+    <script src="libs/header-attrs-2.23/header-attrs.js"></script>
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/metropolis.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+.title[
+# Durağan Olmayan Zaman Serileri ve Eşbütünleşme
+]
+.subtitle[
+## Finansal Ekonometri
+]
+.author[
+### Prof. Dr. Hüseyin Taştan
+]
+.institute[
+### Yıldız Teknik Üniversitesi - MP İktisat TYL Programı
+]
+
+---
+
+class: my-medium-font
+
+&lt;style type="text/css"&gt;
+.remark-slide-content {
+    font-size: 25px;
+    padding: 1em 4em 1em 4em;
+}
+.my-large-font {
+  font-size: 40px;
+}
+.my-small-font {
+  font-size: 20px;
+}
+.my-medium-font {
+  font-size: 30px;
+}
+.left-column {
+  width: 75%;
+  float: left;
+  padding-top: 1em;
+}
+.right-column {
+  width: 25%;
+  float: right;
+  padding-top: 1em;
+}
+&lt;/style&gt;
+
+
+
+
+# Plan
+
+
+- [Trend-durağan ve Fark-durağan zaman serileri](#tspdsp) 
+
+- [ADF birim kök testi](#adf) 
+
+- [Eşbütünleşme (Cointegration)](#coint)
+
+- [Hata düzeltme modeli](#ecm)
+
+
+---
+# Zaman Serileriyle Regresyon Analizi 
+
+- Bağımlı ve açıklayıcı değişkenlerin **durağan** olması gerekir. Trend içeren değişkenler durağan değildir.
+
+- Model kurulmadan önce ya da model içinde düzeltme veya dönüştürmeler yapmak gerekebilir. 
+
+- Benzer şekilde mevsimsel hareketler değişkenler arasındaki ilişkileri maskeleyebilir. Uygun mevsimsel düzeltmelerin yapılması gerekebilir. 
+
+- Durağan olmayan değişkenlerle regresyon kurulursa ne olur? Bu soruya cevap vermeden önce durağanlık kavramına daha yakından bakalım. 
+
+---
+name: tspdsp 
+
+# Durağanlık 
+
+**Durağan** (stationary) bir değişkenin 
+
+- **Ortalaması** zamana bağlı değildir. Trend içeren bir değişkenin ortalaması zamanla değişir, bu nedenle durağan olamaz. 
+
+- **Varyansı** zamana bağlı değildir. Örneğin, random walk sürecinin varyansı zamanda ilerledikçe artar, bu nedenle durağan değildir. 
+
+- Geçmiş değerleriyle **otokorelasyonu** zamana değil, iki zaman arasındaki uzaklığa bağlıdır. Böylece beklenmedik şokların etkileri zamanla kaybolur. Durağan olmayan bir zaman serisinde ise şokların etkisi kalıcıdır.
+
+---
+# Trend-durağan Değişkenler 
+
+- Trend-durağan Süreç: trendden arındırıldığında durağanlaşırlar. Örneğin, doğrusal trend modeli: 
+$$y_t = \beta_0 + \beta_1 t + u_t,~~~t=1,2,\ldots,n $$
+Burada `\(u_t\)` bir white noise süreçtir. White Noise tanım gereği durağandır. 
+
+- `\(y_t\)`'nin `\(t\)` zamanındaki değeri `\(t\)`'ye bağlıdır. `\(\beta_1&gt;0\)` ise ortalaması zamanla artar. Varyansı ise sabittir. 
+
+- Teknik olarak durağan değildir. Ancak durağanlaştırmak kolaydır. Trendden arındırmak yeterli olur. 
+
+- Çoklu regresyon modelinde eşitliğin sağ tarafına trendin eklenmesi gerekir. 
+
+---
+# Üstel Trend Modeli
+
+- Pratikte kullanışlı olabilecek bir trend-durağan süreç üstel trend modelidir. 
+`$$\log(y_t) = \beta_0 + \beta_1 t + u_t,~~~t=1,2,\ldots,T$$`
+
+- Bağımlı değişkenin doğal logaritmasının alıp `\(x\)` üzerine bir regresyonunu kurarsak üstel trend modeli tahmin etmiş oluruz. 
+
+- Trend ( `\(t\)` ) katsayısı `\(\beta_1\)`, her zaman diliminde beklenen ortalama büyümeyi verir. Yani 
+`$$\mbox{Ortalama Yüzde Büyüme} = \% 100\beta_1$$`
+
+---
+# Üstel Trend: Örnek
+
+.pull-left[
+- Örneğin 1998ç1-2020ç3 dönemi çeyreklik verilerle GSYİH'nın üstel trend modelini tahmin edersek:
+`$$\widehat{\log(GSYİH)_t} = 4.13 +0.012~trend$$`
+Türkiye ekonomisi bu dönemde her çeyrek ortalama %1.2 büyümüştür. Yıllık ortalama büyüme %4.8 olarak tahmin edilmiştir. 
+]
+
+.pull-right[
+
+![](zaman_serileri4_files/figure-html/unnamed-chunk-2-1.png)&lt;!-- --&gt;
+]
+
+
+---
+# Mevsimsel etkiler 
+
+- Aylık, çeyreklik, haftalık, günlük frekanslı zaman serilerinde mevsimsel davranış gözlenebilir. 
+
+- Bu mevsimsel davranışı modellemenin en basit yolu her mevsim için bir kukla değişken tanımlamaktır. 
+
+- Örneğin aylık veriler için her aya ait 12 kukla değişken tanımlanabilir. Ancak regresyon modeline 11 kukla eklenir. Dışlanan ay baz grup olacaktır. 
+`$$y_t = \beta_0 + \delta_1 feb_t + \delta_2 mar_t+ ...+ \delta_{11} dec_t + \beta_1 x_{t1} + ...+ \beta_k x_{tk}+ u_t$$`
+
+- Bu modelde ocak ayı dışlanmıştır. Sabit terim baz grup olan ocak ayını temsil eder. Kukla katsayıları ocak ayı ile farkları verir.  
+
+- Mevsim kuklalarının anlamlı olup olmadığı F testi ile sınanabilir. 
+
+- Genel olarak `\(m\)` mevsim sayısı ise `\(m-1\)` kukla eklenir. 
+
+
+---
+# Trend-durağan Süreç 
+.pull-left[
+![](zaman_serileri4_files/figure-html/unnamed-chunk-3-1.png)&lt;!-- --&gt;
+]
+
+.pull-right[
+![](zaman_serileri4_files/figure-html/unnamed-chunk-4-1.png)&lt;!-- --&gt;
+]
+---
+# Trendden arındırılmış seri ve korelogramı
+
+.pull-left[
+![](zaman_serileri4_files/figure-html/unnamed-chunk-5-1.png)&lt;!-- --&gt;
+]
+.pull-right[
+![](zaman_serileri4_files/figure-html/unnamed-chunk-6-1.png)&lt;!-- --&gt;
+]
+
+---
+# Fark-Durağan Süreç
+
+- Farkı alındığında durağanlaşan zaman serilerine fark-durağan süreç adı verilir. 
+
+- Çoğunlukla birinci fark alınarak durağan seriler elde edilebilir. 
+
+- Bazı durumlarda ikinci farkı almak gerekebilir. 
+
+- Birinci fark: `\(\Delta x_t = x_{t}- x_{t-1}\)`
+
+- Örnek: Random Walk (RW) süreci: `\(y_t = y_{t-1} + \epsilon_t\)`, `\(\epsilon_t~\sim~\)`White Noise
+
+- RW birinci farkı: `\(\Delta y_t = \epsilon_t\)` tanım gereği durağandır. 
+
+---
+# Random Walk: Simülasyon 
+&lt;img src="zaman_serileri4_files/figure-html/unnamed-chunk-7-1.png" style="display: block; margin: auto;" /&gt;
+
+---
+# Tipik bir RW korelogramı
+.pull-left[
+![](zaman_serileri4_files/figure-html/unnamed-chunk-8-1.png)&lt;!-- --&gt;
+]
+
+.pull-right[
+- Teorik olarak bir RW değişkenin otokorelasyonları her gecikmede 1'dir. 
+
+- Ancak pratikte karşılaştığımız büyüklükteki veri setlerinde daha küçük ve çok yavaş bir şekilde azalan ACF değerleri gözlenir. 
+
+- Bu seride hafızanın yüksekliğine ve şokların kalıcı olabileceğine işaret eder. 
+]
+---
+# Random Walk with Drift 
+
+- Sürüklenme (drift) terimli rassal yürüyüş modeli tıpkı RW gibi birinci farkı alındığında durağanlaşır. 
+
+- RW sürecine bir sabit (drift) eklenmesiyle elde edilir: 
+`$$y_t = \alpha + y_{t-1} + \epsilon_t$$`
+
+- Burada `\(\alpha\)` drift terimidir. Driftin varlığı değişkende trend oluşmasına neden olur. Ancak bu trend deterministik değil stokastiktir. Bu nedenle trendden arındırmak seriyi durağanlaştırmaz. 
+
+- `\(y_t\)`'nin hem ortalaması hem varyansı hem de otokorelasyonları zamana bağlı olarak değişir. 
+
+---
+# Random Walk: Simülasyon 
+&lt;img src="zaman_serileri4_files/figure-html/unnamed-chunk-9-1.png" style="display: block; margin: auto;" /&gt;
+
+---
+# RWD korelogramı
+RW/drift serinin korelogramı RW serisine benzer: 
+.pull-left[
+![](zaman_serileri4_files/figure-html/unnamed-chunk-10-1.png)&lt;!-- --&gt;
+]
+
+.pull-right[ 
+![](zaman_serileri4_files/figure-html/unnamed-chunk-11-1.png)&lt;!-- --&gt;
+]
+
+
+---
+name: adf
+
+# Birim Kök Testleri
+
+- Bir değişkenin durağan olup olmadığını birim kök testleriyle anlayabiliriz. 
+
+- Çok sayıda birim kök ve durağanlık testi geliştirilmiştir. Bunların en bilinenleri Dickey-Fuller (DF) tesleridir. 
+
+- DF testi AR(1) fomülasyonuna dayanır: 
+`$$y_t = \alpha + \beta y_{t-1} + \epsilon_t$$`
+RW bu modelin özel bir halidir. Birim kök testleri `\(\beta=1\)` olup olmadığını test eder. Boş ve alternatif hipotezler: 
+`$$H_0: \mbox{Değişken durağan değildir}\Leftrightarrow \beta=1$$`
+`$$H_1: \mbox{Değişken durağandır}\Leftrightarrow \beta&lt;1$$`
+
+---
+# Birim kök testleri 
+
+.pull-left[
+- Sadece sabit durumunda kritik değerler 
+&lt;img src="img/adf1.png" width="960" /&gt;
+]
+
+.pull-right[
+- DF ya ADF testi sol kuyruk testidir. Test istatistiği basit t-oranı olsa da dağılımı standart değildir. 
+- Kritik değerler modelde sabit terim ve/veya trend olup olmamasına göre değişir. 
+- Kritik değerden daha küçük bir ADF test değeri değişkenin durağan olduğuna işaret eder. Daha büyükse H0 kabul edilir, seri durağan değildir. 
+]
+
+---
+# Sabit ve sabit+trend durumlarında ADF dağılımı
+ 
+&lt;img src="img/adf2.png" width="75%" style="display: block; margin: auto;" /&gt;
+
+---
+name: coint
+
+# Kurmaca Regresyon 
+
+- Trend-durağan değişkenlerle kurulan zaman serisi regresyonlarında trend ihmal edilirse çıkarsamalar yanlış olur. 
+
+- Benzer şekilde fark-durağan değişkenlerle kurulan zaman serisi regresyonları, trend eklense bile yanlış çıkarsamaya neden olur. Yani sonuçlar kurmacadır. 
+
+- Birim kök testleri sonucunda farkı alındığında durağanlaşan değişkenlerin olduğu modellerde regresyon sonuçlarının kurmaca olmadığını nasıl anlarız? 
+
+- Eğer değişkenler arasında eşbütünleşme ilişkisi varsa regresyon sonuçları uzun dönem ilişkisini yansıtır. Yani sonuçlar kurmaca değildir. 
+
+- Eşbütünleşme yoksa sonuçlar kurmaca olabilir.
+
+---
+# Eşbütünleşme (cointegration)
+
+- `\(y_t\)` ve `\(x_t\)`'nin fark-durağan olduğunu düşünelim (bunu birim kök testleriyle sınayabiliriz)
+
+- Basit modelde 
+`$$y_t = \beta_0 + \beta_1 x_t + u_t$$`
+hata terimi `\(u_t\)` durağansa `\(y_t\)` ve `\(x_t\)` eşbütünleşiktir. Bu ADF birim kök testi ile sınanabilir. 
+
+- Bu yaklaşımın adı **Engle-Granger eşbütünleşme** (cointegration) testidir. 
+
+- Eğer `\(u_t\)` durağan değilse değişkenler eşbütünleşik değildir. Bu durumda statik model uzun dönem denge ilişkisini yansıtmaz. 
+
+
+---
+# Eşbütünleşme
+
+- Finans ve iktisatta çok sayıda eşbütünleşme örneği bulunabilir. Çoğu zaman arbitraj mekanizması ile iki ya da daha fazla fark-durağan değişken uzun dönemde birbirlerine bağlı olarak hareket ederler. Kısa dönemde sapmalar mümkün olsa da bunlar geçicidir. 
+
+- Spot ve futures fiyatları: bir varlığın zamanın farklı noktalarındaki fiyatları arasında uzun dönemde bir denge ilişkisi beklenir. 
+
+- Tek fiyat kuralı (Law of One Price - LOP): homojen bir malın farklı coğrafi piyasalarda benzer şekilde hareket etmesi beklenir. Aradaki fark ticaret maliyetlerini yansıtır. İki fiyat arasındaki fark taşıma maliyetlerinden yüksekse arbitraj olanağı doğar; ticaret yoluyla fiyatlar dengelenir. 
+
+- Satın alma gücü paritesi (Purchasing Power Parity - PPP): iki ülkenin fiyatlar genel düzeyinin birbirlerine oranı ile nominal döviz kurları arasında uzun dönem bir denge ilişkisi beklenir.
+
+- Hisse senedi fiyatları ile kar payları (dividends) arasında uzun dönem denge ilişkisi. Gayrimenkul fiyatları ile kira ilişkisi, vb.
+
+
+---
+# Engle-Granger eşbütünleşme testi
+
+- EG testinin ilk adımında aşağıdaki model OLS ile tahmin edilir 
+`$$\hat{y}_t = \hat{\alpha} + \hat{\beta} x_t$$`
+
+- Eğer bu iki seri eşbütünleşik ise kalıntı, `\(\hat{u}_t = y_t - \hat{\alpha} - \hat{\beta} x_t\)`, durağan olmalıdır, I(0). 
+
+- İkinci adımda kalıntılara birim kök testi, örneğin ADF testi, uygulanır. Böylece kalıntıların durağan olup olmadığı araştırılır. 
+
+- Kritik değerler ADF kritik değerlerinden farklıdır. 
+&lt;img src="img/EG1.png" width="70%" style="display: block; margin: auto;" /&gt;&lt;img src="img/EG2.png" width="70%" style="display: block; margin: auto;" /&gt;
+(Kaynak: Wooldridge, Introductory Econometrics, 6th ed., pp.581-582)
+
+
+---
+# Engle-Granger eşbütünleşme testi
+
+- EG testinin boş hipotezi
+`$$H_0: u_t~\mbox{durağan değildir (Eşbütünleşme yok)}$$`
+alternatif: 
+`$$H_1: u_t~\mbox{durağandır (Eşbütünleşme var)}$$`
+- Boş hipotez altında kurmaca regresyon mevcuttur (eşbütünleşme yok). 
+
+- Boş hipotezin reddi değişkenlerin eşbütünleşik olduğu anlamına gelir. Bu durumda kısa dönemde bir hata düzeltme modeli tahmin edilebilir. 
+
+- Değişkenler eşbütünleşik değilse birinci farkları alınarak bir dinamik model, VAR, vs. kurulabilir. 
+
+
+---
+# Zaman serileriyle regresyon analizinde adımlar
+
+1. Modelde yer alan değişkenlerin her birinin durağan olup olmadığını belirle (birim kök testleriyle)
+
+1. Eğer tüm değişkenler fark-durağansa Engle-Granger eşbütünleşme testini uygula. 
+Testin sonucuna göre seriler eşbütünleşik ise regresyon uzun dönem denge ilişkisini yansıtır ve bir hata düzeltme modeli (ECM) tahmin edilebilir. 
+
+1. Değişkenler arasında eşbütünleşme yoksa modeli birinci farkları aldıktan sonra tahmin et. Kalıntılar white noise olacak şekilde uygun bir dinamik model tahmin et. (örneğin birinci farklarla VAR)
+
+
+---
+name: ecm 
+
+# Hata Düzeltme Modeli 
+
+- Hata düzeltme modeli (Error Correction Model - ECM) eşbütünleşik değişkenler için tanımlanabilir. 
+
+- Örnek olarak kira ve ev fiyatları ilişkisini ele alalım. `\(r_t\)` logaritmik kira, `\(p_t\)` ise logaritmik ev fiyatları endeksi olsun. 
+
+- Her iki değişken de fark-durağan olsun (birinci farkları durağan). 
+
+- Ayrıca `\(r_t\)` ve `\(p_t\)` eşbütünleşik olsun. Yani 
+`$$s_t = r_t - \beta p_t\sim~\mbox{Durağan}$$`
+uzun dönem denge ilişkisinden sapmaları gösterir ve eşbütünleşik modeller için her zaman durağandır. 
+
+---
+# Kira-Fiyat ilişkisi 
+
+- Bu iki değişken arasındaki kısa dönem ilişkisi bir ECM ile betimlenebilir: 
+`$$\begin{aligned} 
+  \Delta r_t &amp;= \delta s_{t-1} + \Delta r_t \mbox{ gecikmeleri} + \Delta p_t \mbox{ gecikmeleri} + sabit + hata\\
+    &amp;= \delta (r_{t-1} - \beta p_{t-1})+ \Delta r_t \mbox{ gecikmeleri} + \Delta p_t \mbox{ gecikmeleri} + sabit + hata 
+\end{aligned}$$`
+
+- Hata düzeltme parametresi: `\(\delta&lt;0\)` (ayarlanma hızı)
+
+- Önceki dönemde `\(s_{t-1}&gt;0\)` ise yani kiralar denge ilişkisinin üzerindeyse `\(\delta&lt;0\)` olduğundan sonraki dönemde `\(\delta\)` kadar azalır. Kiralar denge ilişkisine doğru ayarlanır. 
+
+- Tersi durumda isa kiralar yukarı yönlü hareket ederek denge ilişkisine yaklaşır. 
+
+
+---
+# Vektör Hata Düzeltme Modeli (VEC) vs. VAR
+
+- Seviyelerde durağan olmayan ve aralarında eşbütünleşme ilişkisi olmayan değişkenlerin olduğu sistemlerde 
+  - Tüm değişkenlerin birinci farkları alınarak durağanlaştırılır
+  - Birinci farklarla VAR(p) model kurularak öngörü modelleri geliştirilebilir
+  
+- Seviyelerde durağan olmayan ancak aralarında bir eşbütünleşme ilişkisi olan değişkenlerin olduğu sistemlerde 
+  - Uzun dönem ilişkisini betimleyen bir statik model kurulabilir
+  - Kısa dönem davranışını betimlemek amacıyla birinci farklarla bir VAR kurulur ve bu modele uzun dönem ilişkisinden sapmalar eklenir (VEC modeli)
+  
+---
+# Çok değişkenli modellerde eşbütünleşme 
+
+- Elimizde `\(k\)` birinci farkı alınınca durağanlaşan, yani `\(I(1)\)` değişken varsa bunlar arasında en fazla `\(k-1\)` tane eşbütünleşme ilişkisi olabilir.
+
+- Eğer bu değişkenlerin bir doğrusal bileşkesi durağan ise yani
+`$$\beta_1 y_{1t} + \beta_2 y_{2t} +\ldots+ \beta_k y_{kt} \sim~I(0)$$`
+
+sağlayan `\(\beta\)` katsayıları bulunabilirse bu değişkenlerin eşbütünleşik olduğu söylenebilir. 
+
+- Bu durumda uzun dönem ilişkisi aşağıdaki gibi yazılabilir:
+`$$y_{1t} - \beta_2 y_{2t} - \beta_3 y_{3t} - \ldots - \beta_k y_{kt} = u_t\sim~I(0)$$`
+burada `\(\beta_1=1\)` olarak normalize edildi. 
+
+
+- `\(k\)` değişkenin olduğu bir sistemde en fazla `\(r\)`, `\(0&lt;r&lt;k\)`, doğrusal bağımsız eşbütünleşme vektörü bulunabilir.  
+
+---
+# Çok değişkenli modellerde eşbütünleşme 
+
+- Değişkenler eşbütünleşik ise kısa dönem davranışları vektör hata düzeltme modelleri ile özetlenebilir(VEC)
+
+- Engle-Granger yöntemi çok değişkenli durumlarda genellikle uygulanmaz. Bunun için uygulamada daha çok VAR yaklaşımını baz alan Johansen yaklaşımı kullanılır. 
+
+- Johansen eşbütünleşme testleri maksimum olabilirlik tahmin çerçevesi içinde geliştirilmiştir. Johansen testleri (Trace ve Max Eigenvalue) kullanılarak eşbütünleşme vektörleri tahmin edilebilir. 
+
+- Detaylar için daha ileri düzeyde zaman serisi kaynaklarına başvurulabilir, örneğin, Hamilton (1994, Time Series Analysis),  Lutkepohl (2005, Introduction to Multiple Time Series Analysis).
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script src="macros.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false,
+"ratio": "16:9"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+// add `data-at-shortcutkeys` attribute to <body> to resolve conflicts with JAWS
+// screen reader (see PR #262)
+(function(d) {
+  let res = {};
+  d.querySelectorAll('.remark-help-content table tr').forEach(tr => {
+    const t = tr.querySelector('td:nth-child(2)').innerText;
+    tr.querySelectorAll('td:first-child .key').forEach(key => {
+      const k = key.innerText;
+      if (/^[a-z]$/.test(k)) res[k] = t;  // must be a single letter (key)
+    });
+  });
+  d.body.setAttribute('data-at-shortcutkeys', JSON.stringify(res));
+})(document);
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

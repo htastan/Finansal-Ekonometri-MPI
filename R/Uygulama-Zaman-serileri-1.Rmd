@@ -1,0 +1,370 @@
+---
+title: 'Uygulama - Zaman Serileri Analizi: Temel Kavramlar'
+author:
+  name: Prof. Dr. Hüseyin Taştan
+  affiliation: Yıldız Teknik Üniversitesi
+date: ""
+output:
+  html_document:
+    number_sections: yes
+    theme: readable
+    highlight: haddock
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+    keep_md: no
+  word_document:
+    toc: yes
+    toc_depth: '3'
+subtitle: Finansal Ekonometri (MPİ-TYL)
+---
+<style type="text/css"> 
+body{
+  font-size: 12pt;
+}
+code.r{
+  font-size: 12pt;
+}
+</style>
+
+```{r setup, include=FALSE}
+# knitr::opts_chunk$set(echo = TRUE, results = 'asis', fig.show = 'asis', fig.width = 3.5,                         fig.height = 3)
+knitr::opts_chunk$set(echo = TRUE)
+``` 
+
+# Zaman Serisi Grafikleri 
+
+```{r}
+library(tidyverse)
+library(forecast)
+```
+
+## Zamana göre çizgi grafiği 
+
+### Örnek: Gayrisafi Yurtiçi Hasıla ve İnşaat Sektörü 
+
+```{r}
+load("Data/gsyih_sa_endeks.RData")
+tail(gsyih_sa_endeks)
+```
+
+
+```{r} 
+# ts objeleri oluştur
+# GSYİH
+gsyih_sa_ts <- ts(gsyih_sa_endeks$gsyih_sa, start = c(1998,1), frequency = 4) 
+# inşaat sektörü GSYİH
+insaat_ts <- ts(gsyih_sa_endeks$insaat, start = c(1998,1), frequency = 4) 
+gmenkul_ts <- ts(gsyih_sa_endeks$gmenkul, start = c(1998,1), frequency = 4) 
+# zaman serisi grafiği
+autoplot(gsyih_sa_ts, series = "GSYİH")+
+  autolayer(insaat_ts, series="İnşaat") +
+  xlab("") + ylab("") +
+  ggtitle("Zincirlenmiş Hacim Endeksleri") +
+  theme(legend.title = element_blank()) +
+  theme(legend.position = "right")
+```
+
+
+Dönemden döneme büyüme oranları: 
+```{r}
+# inşaat sektörü büyüme oranı 
+insaat_buyume <- 100*(insaat_ts - stats::lag(insaat_ts, -1))/stats::lag(insaat_ts, -1) 
+# GSYİH dönemlik büyüme oranı
+gsyih_buyume <- 100*( gsyih_sa_ts - stats::lag(gsyih_sa_ts, -1))/stats::lag(gsyih_sa_ts, -1) 
+# dönemlik büyümeler birlikte 
+autoplot(gsyih_buyume, series = "GSYİH")+
+  autolayer(insaat_buyume, series="İnşaat") +
+  xlab("") + ylab("") +  
+  scale_colour_manual(values=c("blue","red" ),
+                      breaks=c("İnşaat","GSYİH" )) +
+  ggtitle("Dönemlik reel büyüme oranları") +
+  theme(legend.title = element_blank())
+```
+
+
+Bir önceki yılın aynı çeyreğine göre büyüme oranları
+```{r}
+# inşaat sektörü büyüme oranı 
+insaat_buyume2 <- 100*(insaat_ts - stats::lag(insaat_ts, -4))/stats::lag(insaat_ts, -4) 
+# GSYİH dönemlik büyüme oranı
+gsyih_buyume2 <- 100*( gsyih_sa_ts - stats::lag(gsyih_sa_ts, -4))/stats::lag(gsyih_sa_ts, -4) 
+# dönemlik büyümeler birlikte 
+autoplot(gsyih_buyume2, series = "GSYİH")+
+  autolayer(insaat_buyume2, series="İnşaat") +
+  xlab("") + ylab("") +  
+  scale_colour_manual(values=c("blue","red" ),
+                      breaks=c("İnşaat","GSYİH" )) +
+  geom_hline(yintercept = 0, linetype = 2) +
+  ggtitle("Yıllık reel büyüme oranları") +
+  theme(legend.title = element_blank())
+```
+
+
+
+ 
+
+## Mevsimsel Grafik 
+
+### Örnek: Türkiye'ye gelen turist sayısı
+
+```{r}
+load("Data/turist.rda")
+turist_ts <- ts(turist$touristnumber, start = c(1990,1), frequency = 12)
+autoplot(turist_ts)
+```
+
+```{r}
+# mevsimsel grafik
+forecast::ggseasonplot(turist_ts)
+```
+
+
+
+```{r}
+autoplot(log(turist_ts))
+```
+
+
+```{r}
+# mevsimsel grafik
+forecast::ggseasonplot(log(turist_ts), year.labels=TRUE, year.labels.left=TRUE)
+```
+
+```{r}
+# polar mevsimsel grafik
+forecast::ggseasonplot(log(turist_ts), polar=TRUE)
+```
+
+```{r}
+# mevsimsel alt dönemler
+ggsubseriesplot(turist_ts) +
+  ylab("Turist sayısı") +
+  ggtitle("Mevsimsel alt seriler: Türkiye'ye gelen turist sayısı")
+```
+
+
+```{r}
+# mevsimsel alt dönemler, logaritmik skala
+ggsubseriesplot(log(turist_ts)) +
+  ylab("Turist sayısı Logaritmik skala") +
+  ggtitle("Mevsimsel alt seriler: Türkiye'ye gelen turist sayısı (log)")
+```
+
+
+
+## Otokorelasyon grafikleri (korelogram)
+
+### Örnek: İstanbul'da ortalama sıcaklıklar 
+
+```{r}
+load("Data/weather_istanbul.rda")
+temp_ist <- ts(weather_istanbul$temp, start = c(2000,1), frequency = 12)
+autoplot(temp_ist)
+```
+
+```{r}
+# ACF, base R
+acf(temp_ist)
+```
+
+
+```{r}
+# örneklem ACF
+ggAcf(temp_ist,24) + scale_x_continuous(breaks = seq(1,24,1))
+```
+
+### Örnek: Gelen turist sayısı 
+
+```{r}
+ggAcf(turist_ts, 60)
+```
+
+### Örnek: Türkiye yıllık makroekonomik verileri 
+
+
+```{r}
+# Gerekli paketler
+library(tidyverse)
+library(fable)   # tools for time series forecasting
+library(feasts)  # Feature Extraction And Statistics for Time Series
+library(tsibble) # time series tibble object
+library(tsibbledata) # for data sets 
+data("global_economy")
+head(global_economy)
+```
+```{r}
+korea_data <- global_economy %>% 
+  filter(Code == "KOR")
+head(korea_data)
+```
+
+```{r}
+turkey_data <- global_economy %>% 
+  filter(Country == "Turkey")
+head(turkey_data)
+```
+
+```{r}
+turkey_data %>% autoplot(log(GDP))
+```
+
+
+```{r}
+turkey_data %>% ACF(log(GDP)) %>% autoplot()
+```
+
+ACF grafiğine göre GDP geçmiş değerlere yüksek derecede bağımlılık sergilemektedir. ACF değerleri gecikme uzunluğu arttıkça azalmaktadır. Zaman içinde düzenli artış sergileyen (pozitif trend) zaman serileri tipik olarak yukarıdaki gibi bir ACF grafiğine sahip olur. 
+
+
+```{r}
+# KORE GDP verileri
+korea_data %>% ACF(log(GDP)) %>% autoplot()
+```
+
+
+```{r}
+# KORE büyüme oranı
+korea_data %>% ACF(Growth) %>% autoplot()
+```
+
+
+Büyüme oranının ACF grafiğine bakalım: 
+
+```{r}
+turkey_data %>% ACF(Growth) %>% autoplot()
+```
+
+Tüm gecikmelerde ACF değerleri istatistik bakımından sıfırdan farklı değildir (4. gecikme hariç, ancak gözardı edilebilecek kadar küçüktür). 
+
+
+```{r}
+# KORE GDP verileri
+korea_data %>% ACF(log(GDP)) %>% autoplot()
+```
+
+
+```{r}
+# KORE büyüme oranı
+korea_data %>% ACF(Growth) %>% autoplot()
+```
+
+
+
+### Örnek: Hisse senedi piyasası 
+
+```{r}
+# tsibbledata::gafa_stock
+data("gafa_stock")
+head(gafa_stock)
+```
+
+Bu veri setinde Google, Apple, Facebook ve Amazon hisse senetlerinin günlük piyasa bilgileri yer almaktadır. Veri seti `tsibble` formatındadır. `{tsibble}`, `{fable}`, `{feasts}` paketlerine ilişkin daha fazla bilgi için bkz [https://tidyverts.org/](https://tidyverts.org/) ve [https://otexts.com/fpp3/tsibbles.html](https://otexts.com/fpp3/tsibbles.html).  
+ 
+
+Google serisi: 
+```{r}
+# tsibbledata::gafa_stock
+gafa_stock %>% filter(Symbol == "GOOG") %>% 
+  autoplot(Close)
+```
+
+
+
+Google ACF grafiği: 
+```{r}
+# use feasts::ACF function
+gafa_stock %>% filter(Symbol == "GOOG") %>% 
+  ACF(Close, lag_max = 10) 
+```
+```{r}
+# use feasts::ACF function
+gafa_stock %>% filter(Symbol == "GOOG") %>% 
+  ACF(Close, lag_max = 60) %>% 
+  autoplot()
+```
+```{r}
+# use feasts::ACF function
+gafa_stock %>% filter(Symbol == "GOOG") %>% 
+  mutate(ret_GOOG = 100*(log(Close) - lag(log(Close)))) %>% 
+  autoplot(ret_GOOG)
+```
+
+
+```{r}
+# sadece google hissesinde oluşan veri seti
+google <- gafa_stock %>% filter(Symbol == "GOOG") %>% 
+  mutate(ret_GOOG = 100*(log(Close) - lag(log(Close)))) 
+#
+google %>% ACF(ret_GOOG, lag_max = 60) %>% 
+  autoplot()
+```
+
+`{feasts::gg_tsdisplay()}` fonksiyonu: 
+```{r}
+# partial option: Kısmi otokorelasyon fonksiyonu (PACF)
+google %>% gg_tsdisplay(Close, plot_type = 'partial')
+```
+
+
+
+# Klasik zaman serisi ayrıştırması 
+
+
+## Trend-çevrim bileşeni için basit bir tahminci 
+
+Hareketli ortalama düzleştiricisi ile Trend-Çevrim bileşeni tahmin edilebilir:  
+$$\hat{Trend}_{t} = \frac{1}{m} \sum_{j=-k}^k y_{t+j}, \tag{6.1}$$
+Burada $m=2k+1$'dir, yani $t$ çevresinde $k$ dönemin verilerinin ortalaması alınır. 
+
+
+```{r}
+autoplot(gsyih_sa_ts, series="Veriler") +
+  autolayer(ma(gsyih_sa_ts, 5), series="5-MA") +
+  xlab("Year") + ylab("GSYİH") +
+  ggtitle("GSYİH") +
+  scale_colour_manual(values=c("Veriler"="grey50","5-MA"="red"),
+                      breaks=c("Veriler","5-MA"))
+```
+
+
+Mevsimsel seriler için de benzer şekilde hareketli ortalamalar düzleştiricisi kullanılabilir. Tipik olarak çift sayılı gecikmeler kullanılır. R'da `ma()` fonksiyonu aylık seriler için order=12 ile kullanıldığında merkezi hareketli ortalamalar hesaplanır (günlük veriler için order = 7 alınabilir). Örneğin: 
+```{r}
+autoplot(turist_ts, series="Veriler") +
+  autolayer(ma(turist_ts, order = 12), series="12-MA") +
+  xlab("") + ylab("Gelen turist sayısı") +
+  ggtitle("Gelen turist sayısı") +
+  scale_colour_manual(values=c("Veriler"="grey50","12-MA"="red"),
+                      breaks=c("Veriler","12-MA"))
+```
+
+Logaritmik dönüştürme ile trend-çevrim: 
+```{r}
+autoplot(log(turist_ts), series="Veriler") +
+  autolayer(ma(log(turist_ts), order = 12), series="5-MA") +
+  xlab("") + ylab("Gelen turist sayısı (log)") +
+  ggtitle("Gelen turist sayısı (log)") +
+  scale_colour_manual(values=c("Veriler"="grey50","5-MA"="red"),
+                      breaks=c("Veriler","5-MA"))
+```
+
+
+## R ile klasik dekompozisyon
+
+```{r}
+turist_ts %>% decompose(type="multiplicative") %>%
+  autoplot() + xlab("Year") +
+  ggtitle("Klasik çarpımsal ayrıştırma: Gelen turist sayısı")
+```
+
+```{r}
+log(turist_ts) %>% decompose(type="additive") %>%
+  autoplot() + xlab("Year") +
+  ggtitle("Klasik çarpımsal ayrıştırma: Gelen turist sayısı")
+```
+
+
+
+
+
+<div class="tocify-extend-page" data-unique="tocify-extend-page" style="height: 0;"></div>

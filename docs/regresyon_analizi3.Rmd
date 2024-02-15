@@ -1,0 +1,578 @@
+---
+title: "Çoklu Regresyon Modeli: Ek Konular"
+author: "Prof. Dr. Hüseyin Taştan"
+subtitle: Finansal Ekonometri 
+institute: Yıldız Teknik Üniversitesi - MP İktisat TYL Programı
+#date: " "
+output: 
+  xaringan::moon_reader:
+    css: [default, metropolis]
+    lib_dir: libs
+    nature:
+      beforeInit: "macros.js"
+      highlightStyle: github
+      highlightLines: yes
+      countIncrementalSlides: no
+      ratio: '16:9'
+  html_document:
+    df_print: paged
+  pdf_document: default
+
+
+---
+class: my-medium-font
+
+<style type="text/css">
+.remark-slide-content {
+    font-size: 25px;
+    padding: 1em 4em 1em 4em;
+}
+.my-large-font {
+  font-size: 40px;
+}
+.my-small-font {
+  font-size: 20px;
+}
+.my-medium-font {
+  font-size: 30px;
+}
+.left-column {
+  width: 75%;
+  float: left;
+  padding-top: 1em;
+}
+.right-column {
+  width: 25%;
+  float: right;
+  padding-top: 1em;
+}
+</style>
+
+
+
+
+# Plan
+
+- [Standartlaştırılmış regresyon](#standardize)
+
+- [Uyum iyiliği ölçütü: Düzeltilmiş R-kare](#rbarkare)
+
+- [Potansiyel Problemler](#problems) 
+
+- [Regresyon modelleriyle kestirim (prediction)](#kestirim) 
+
+- [Makine Öğrenmesi: Kısa bir giriş](#mlgiris)
+
+- [Ekonometri ve makine öğrenmesi](#ekonml) 
+
+- [Kestirim başarısının tahmini: geçerleme yaklaşımı](#gecerleme)
+
+
+
+---
+name: standardize 
+
+# Çoklu regresyon modeli 
+
+- Popülasyon regresyon modelini aşağıdaki gibi yazmıştık
+$$ y= \beta_0 + \beta_1 x_1 + \beta_2 x_2 + \ldots + \beta_k x_k + u$$
+Modelde $k$ tane $x$ değişkeni ve bir sabit terim (kesme terimi) mevcuttur. Bilinmeyen parametre sayısı $k+1$'dir. 
+
+- Modelde hata teriminin sabit varyanslı olduğu varsayımı yapılmıştır: $Var(u|x)=\sigma^2$ 
+
+- Model katsayıları Sıradan En Küçük Kareler yöntemi kullanılarak sapmasız ve en düşük varyanslı olacak şekilde tahmin edilebilir. 
+
+- Katsayılar ölçü birimlerine ve modelin fonksiyon kalıbına göre (logaritmik, karesel veya başka bir dönüştürme yapılıp yapılmadığına uygun olarak) dikkatlice yorumlanmalıdır. 
+
+- Bir değişkenin katsayı tahmini diğer değişkenlerin etkisi arındırıldıktan sonraki kısmi etkidir (ceteris paribus). 
+
+
+--- 
+
+# Standardize Regresyon
+
+- Regresyon analizinde x değişkenlerinin katsayıları x'lerin ve y'nin ölçü birimlerine veya fonksiyon kalıbına göre değişir. 
+
+- X'in ölçü birimini değiştirdiğimizde katsayı yorumu değişir. 
+
+- Katsayılar büyüklükleri açısından birbirleriyle karşılaştırılamaz. 
+
+- Yani bir beta katsayısının diğerlerine göre büyük olması o değişkenin daha önemli olduğu anlamına gelmez. 
+
+- Eğer katsayıları karşılaştırmak istersek modeli standardize ederek katsayıları standart hata cinsinden yorumlayabiliriz. 
+
+
+---
+# Standardize Regresyon
+
+- Standartlaştırma: örneklem ortalamasını çıkar, standart sapmaya böl: 
+$$z_y = \frac{y - \bar{y}}{\hat{\sigma}_y}$$
+$$z_1 = \frac{x_1 - \bar{x}_1}{\hat{\sigma}_1},z_2 = \frac{x_2 - \bar{x}_2}{\hat{\sigma}_2},\ldots,z_k = \frac{x_k - \bar{x}_k}{\hat{\sigma}_k}$$
+
+Burada $\hat{\sigma}_j$ örneklem standart sapmasıdır.  
+
+- Standartlaştırılmış regresyon:     
+$$z_y = \hat{b}_1 z_1 + \hat{b}_2 z_2 +\ldots+ \hat{b}_k z_k + error$$
+- Eğim katsayılarının yorumu: $x_j$'deki 1 standart sapma değişime karşılık $y$'de tahmin edilen değişim $\hat{b}_j$ standart sapmadır. 
+- Artık orijinal ölçü birimleri kullanılamaz. Katsayılar standart sapma cinsinden yorumlanabilir ve karşılaştırılabilir. 
+
+
+---
+# Örnek 
+
+Hava kirliliği ve ev fiyatları 
+
+- Bağımlı değişken: bölgedeki medyan ev fiyatları (price)
+- Açıklayıcı değişkenler: **nox**: hava kirliliği ölçümü, **dist**: iş merkezlerine olan uzaklık, **crime**: bölgedeki suç oranı, **rooms**: bölgedeki evlerin ortalama oda sayısı, **stratio**: bölgedeki okulların kalitesi (öğretmen başına öğrenci oranı)
+
+- Orijinal ölçümle model: 
+$$price = \beta_0 + \beta_1 nox + \beta_2 crime + \beta_3 rooms + \beta_4 dist + \beta_5 stratio + u$$
+
+- Standardize model:
+$$zprice = b_1 znox + b_2 zcrime + b_3 zrooms + b_4 zdist + b_5 zstratio + zu$$
+
+
+---
+# Standardize regresyon: örnek 
+
+- Tahmin sonuçları 
+$$\widehat{zprice} = -0.340 ~znox -0.143 ~zcrime + 0.514 ~zrooms -0.235 ~zdist -0.270 ~zstratio$$ 
+
+- Hava kirliliğindeki 1 standart sapma artış ev fiyatlarını 0.34 standart sapma azaltır. 
+
+- Suç oranındaki 1 standart sapma artış evlerin değerini 0.143 standart sapma azaltır. 
+
+- Hava kirliliğindeki değişim fiyatlar üzerinde suça göre daha büyük bir etkiye sahiptir. 
+
+- Diğer katsayılar da benzer şekilde yorumlanabilir. 
+
+- Ev büyüklüğü en büyük standardize etkiye sahiptir. 
+
+
+---
+name: rbarkare 
+
+# Düzeltilmiş R-kare 
+
+- Uyum iyiliği ölçütü $R^2$ model karşılaştırmasında kullanılamaz. 
+
+- Bunun nedeni yeni bir değişken eklendiğinde $R^2$'nin her zaman artmasıdır. Yani büyük modellerin $R^2$'si daha büyük olur. 
+
+- Ancak bu uyumun iyi olduğunu göstermeyebilir. 
+
+- Düzeltilmiş (Adjusted) $R$-squared aşağıdaki gibi tanımlanır: 
+$$\bar{R}^2 = 1-\frac{SSR/(n-k-1)}{SST/(n-1)} =1-(1-R^2) \frac{n-1}{n-k-1}$$
+
+- Yeni bir değişken eklendiğinde R-bar-kare artabilir de azalabilir de.
+
+- Bu özelliğinden dolayı model karşılaştırmalarında $\bar{R}^2$ tercih edilebilir. 
+
+<!-- - Model seçiminde yaygın kullanılan diğer uyum iyiliği ölçütleri Akaike Information Criterion (AIC), Bayesian Information criterion (BIC ya da SIC).  -->
+
+
+
+---
+name: problems 
+
+# Çoklu regresyon modeli 
+
+- Popülasyon regresyon modeli
+$$ y= \beta_0 + \beta_1 x_1 + \beta_2 x_2 + \ldots + \beta_k x_k + u$$
+Modelin varsayımları:
+
+- Model parametrelerde doğrusaldır ve $x$'ler arasında tam çoklu doğrusallık yoktur. 
+
+- Modelde hata teriminin sabit varyanslı olduğu varsayımı yapılmıştır: $Var(u|x)=\sigma^2$ 
+
+- Ayrıca hata terimleri birbirleriyle ilişkisizdir: $Cov(u_i,u_j|x)=0$. Rassal örneklemenin yapıldığı yatay-kesit verilerde bu varsayım otomatik olarak sağlanır. 
+
+- Ancak zaman serisi regresyonlarında hata terimi ardışık olarak birbiriyle ilişkili ise bu varsayım sağlanmaz. Buna dizisel korelasyon/otokorelasyon adı verilir. 
+
+---
+
+# Regresyon analizinde potansiyel problemler 
+
+- Hata varyansının sabit olmaması (heteroskedasticity)
+
+- Hata teriminde otokorelasyon veya dizisel/mekansal korelasyon
+
+- Fonksiyon biçiminin yanlış olması, doğrusal olmayan ilişkiler 
+
+- Bağımlı değişkende çok küçük ya da büyük değerler (outliers)
+
+- X'lerde çok büyük ya da küçük değerler (yüksek kaldıraç oranları)
+
+- Yüksek çoklu doğrusallık (multicollinearity) 
+
+- Potansiyel problemlerin teşhisinde kalıntıların görselleştirilmesi faydalı olabilir. Kalıntıların $\hat{y}$'ya veya $x$'lere göre serpilme çizimi önemli bilgi sunar. 
+
+- Kalıntıların sıfır çevresinde rassal dağılmasını bekleriz. Belirgin bir örüntü genellikle probleme işaret eder. 
+
+
+---
+# Doğrusal olmayan ilişki 
+Kalıntı ve tahmin değerlerinin serpilme çizimi 
+
+```{r, echo=FALSE, out.width = "90%", fig.align='center'}
+knitr::include_graphics("img/reg5.png")
+``` 
+
+---
+# Hata teriminde otokorelasyon 
+
+Otokorelasyon katsayısı: $\rho$
+
+.pull-left[
+```{r, echo=FALSE, out.width = "100%", fig.align='center'}
+knitr::include_graphics("img/reg6.png")
+```  
+]
+
+.pull-right[
+* Özellikle zaman serisi modellerinde ortaya çıkabilir. 
+* Otokorelasyon katsayısı = $\rho$
+* $\rho=0$ ise otokorelasyon yok (grafikte belirgin bir örüntü yok). 
+* Soldaki grafikte görüldüğü gibi $\rho$ arttıkça kalıntıların zaman serisi çizimi belirgin bir örüntü sergilemeye başlar. 
+* Otokorelasyon arttıkça pozitif (negatif) değerleri yine pozitif (negatif) değerlerin takip etme olasılığı artmaktadır. 
+]
+
+---
+# Sabit olmayan hata varyansı (heteroskedasticity) 
+
+```{r, echo=FALSE, out.width = "100%", fig.align='center'}
+knitr::include_graphics("img/reg7.png")
+```
+
+
+---
+# Uç değerler (Outliers)
+
+Çok büyük ya da küçük $y_i$ değerleri
+
+```{r, echo=FALSE, out.width = "100%", fig.align='center'}
+knitr::include_graphics("img/reg8.png")
+``` 
+
+
+20 numaralı nokta bir uç değer. Kırmızı: Uç değer dahil tahmin. Mavi kesikli: uç değer hariç tahmin. Sonuç üzerindeki etkisi az gibi görünüyor. Ancak standart hataları ve modelin açıklama gücünü önemli ölçüde etkileyebilir. 
+
+---
+# Yüksek Kaldıraç Noktaları 
+
+Çok büyük ya da küçük $x_i$ değerleri
+ 
+
+```{r, echo=FALSE, out.width = "100%", fig.align='center'}
+knitr::include_graphics("img/reg9.png")
+``` 
+
+41 numaralı nokta yüksek kaldıraçlı bir gözlem. Bu nokta dışlanarak tahmin yapıldığında (mavi kesikli doğru) sonuçlar önemli ölçüde değişiyor. En sağdaki grafikte kaldıraç (leverage) değerleri ile standardize edilmiş kalıntılar gösterilmektedir. Kaldıraç her zaman $1/n$ ile 1 arasında değerler alır. Yüksek kaldıraçlı gözlemler sonuçları etkileyebilir. 
+
+---
+# Çoklu doğrusallık 
+
+(Collinearity ya da Multicollinearity)
+
+```{r, echo=FALSE, out.width = "100%", fig.align='center'}
+knitr::include_graphics("img/reg10.png")
+``` 
+
+
+---
+# Yüksek Çoklu doğrusallık 
+
+Tam çoklu doğrusallık durumunda OLS tahmincileri tanımsızdır. Ancak yüksek doğrusal ilişkili $X$ değişkenlerinin varlığı da problem yaratabilir. OLS tahmin varyansı ve katsayıların standart hataları yükselir. 
+
+
+```{r, echo=FALSE, out.width = "90%", fig.align='center'}
+knitr::include_graphics("img/reg11.png")
+``` 
+
+Sol: OLS amaç fonksiyonu kontür çizimi, düşük korelasyonlu $X$ değişkenleri; Sağ: yüksek korelasyonlu $X$ değişkenleri ile OLS. 
+
+
+---
+name: kestirim 
+
+# Kestirim (prediction)
+
+- Regresyon analizinin temel amaçlarından biri kestirim (prediction) veya öngörü (forecasting) yapabilmektedir. 
+
+- Kestirim: yatay-kesit verilerle bağımlı değişkenin tahmin edilmesi
+
+- Öngörü: zaman serisi verileriyle gelecek değerlerin kestirilmesi/tahmin edilmesi
+
+- Regresyon modelini OLS yöntemiyle çözdükten sonra verilmiş x değerlerini modelde yerine yazarak kestirim değerini oluşturabiliriz. 
+
+- Örneğin 
+$$\hat{y} = \hat{\beta}_0 + \hat{\beta}_1 x_1 + \hat{\beta}_2 x_2 +\ldots+ \hat{\beta}_k x_k$$
+modelinde kestirim değerleri $x_1=c_1$, $x_2=c_2,\ldots,x_k=c_k$ olsun. 
+
+
+---
+# Kestirim 
+
+Bilinmeyen kestirim değerine $\theta_0$ diyelim:
+$$\theta_0 = \beta_0 + \beta_1c_1+\beta_2c_2+\ldots+\beta_k c_k$$
+
+- OLS tahmincisi: 
+$$\hat{\theta}_0 = \hat{\beta}_0 + \hat{\beta}_1 c_1 + \hat{\beta}_2 c_2 +\ldots+ \hat{\beta}_k c_k$$
+
+- Kestirimin %95 Güven Aralığı:
+$$\hat{\theta}_0 \pm~2~se(\hat{\theta}_0)$$
+
+- Verilerde olmayan tekil bir gözlem için oluşturulan kestirimin güven aralığı, ortalama için oluşturulan kestirimin güven aralığından daha geniştir.
+
+- Tekil gözleme ilişkin kestirim standart hatası çok daha büyüktür. 
+
+
+
+---
+name: mlgiris
+
+# Makine Öğrenmesi ve Regresyon Analizi 
+
+- Makine öğrenmesi "bilgisayarların örnek veriler ya da geçmiş deneyimlerden hareketle kestirim başarılarını en yüksek yapacak şekilde programlanması" biçiminde tanımlanabilir (Alpaydın, Yapay Öğrenme, 2018, s.3)
+
+- Finansal ve ekonomik verilerle kestirim/öngörü, sınıflandırma, ve kümeleme problemlerinin çözümüne yönelik algoritmaların geliştirilmesi makine öğrenmesinin konusunu oluşturur. 
+
+- Makine öğrenmesi iki gruba ayrılabilir: 
+  - Gözetimli makine öğrenmesi (supervised machine learning) ve 
+  - Gözetimsiz makine öğrenmesi (unsupervised machine learning)
+
+
+---
+
+# Makine Öğrenmesi Türleri 
+
+```{r, echo=FALSE, out.width = "100%", fig.align='center'}
+knitr::include_graphics("img/MLpic3.png")
+``` 
+
+---
+
+# Gözetimli Öğrenme 
+
+* Makine öğrenmesi algoritmaları ikiye ayrılabilir: gözetimli ya da güdümlü (supervised) ve gözetimsiz (unsupervised) öğrenme. 
+
+- Gözetimli öğrenmede girdi değişkenleri (özellikler ya da öznitelikler) ile çıktı değişkeni gözlemlenebilir. Her gözleme ait bir çıktı değeri ya da kategorisi (etiketi) mevcuttur. Amaç çıktıyı kestirmekte en başarılı modeli bulmaktır. 
+
+* Örnek: bir kredi başvurusundan hareketle ödeyememe riskini (olasılığını) öngörmek
+
+  + Bir banka geçmişteki kredi başvurularından hareketle bir ödeyememe modeli kurabilir. Krediye başvuran bireyin özellikleri (features) kurulan modelde değerlendirilerek bir kestirim yapılabilir (Örneklem-dışı kestirim-out-of-sample prediction).
+  
+* Gözetimli öğrenme türleri: regresyon problemleri, sınıflandırma problemleri.
+
+---
+# Gözetimsiz Öğrenme 
+
+* Girdi değişkenleri (kestirim değişkenleri ya da öznitelikler) gözlemlense de bir çıktı değişkeni ya da etiket yoktur. 
+
+* Yaygın kullanılan problemler: kümeleme ve boyut küçültme 
+
+* Kümeleme (clustering): bir özellik setinden hareketle homojen gruplar bulunabilir mi? Örneğin benzer özelliklere sahip tüketici grupları, hasta türleri, benzer davranışa sahip seçmen grupları vb.
+
+* Boyut küçültme (dimensionality reduction): çok sayıda potansiyel kestirim değişkeni arasından en önemlilerinin seçilmesi
+
+
+---
+
+# Makine Öğrenmesi ile ilişkili alanlar
+
+- **Yapay Zeka** (Artificial Intelligence): bilgisayarların (makinelerin) insanlardan bağımsız olarak akıllıca davranması için araçlar geliştiren disiplin.
+
+  + Günümüzde insan gibi davranan genel yapay zekadan çok, belirli bir görevi başarıyla yapabilen daha dar tanımlı yapay zeka uygulamaları yaygınlaşmaya başlamıştır. 
+
+  + Uygulama örnekleri: otonom araçlar, Siri ve benzeri sesli yardımcılar, Google Search, 
+  Hastalıkların teşhis edilmesi, vs.
+
+- **Veri Bilimi** (Data Science): verilerde saklı bilgiyi ortaya çıkarmak için yöntem ve algoritmalar geliştiren; istatistik, bilgisayar bilimi, matematik ve ilgili diğer bilim dallarının kesişiminde disiplinlerarası bir çalışma alanı. 
+
+- **Veri Madenciliği** (Data Mining): özellikle büyük verilerdeki daha önce bilinmeyen faydalı örüntü ve kalıpların ortaya çıkarılması. 
+
+
+
+---
+
+# Regresyon ve gözetimli öğrenme 
+ 
+
+- Tipik bir (gözetimli) makine öğrenmesi problemini aşağıdaki gibi yazabiliriz: 
+$$y = f(x_1, x_2, \ldots, x_p) + \epsilon$$
+Burada $y$ çıktı değişkenini (etiketleri), $\{x_1, x_2, \ldots, x_p\}$ ise özellikleri ifade etmektedir. $\epsilon$ rassal hata terimidir. 
+
+- Bilinmeyen fonksiyon kalıbı $f(\cdot)$ ile gösterilmiştir. 
+
+- Modelin kestirimini şöyle yazalım: 
+$$\hat{y} = f(x_1, x_2, \ldots, x_p)$$
+- Makine öğrenmesi probleminde amaç kestirim hatasını, $y-\hat{y}$, en küçük yapmaktır. 
+Bu çerçeve Ekonometride kullandığımız yaklaşıma çok benzemektedir.
+
+---
+name: ekonml
+
+# Ekonometri ve Makine Öğrenmesi 
+
+- $f(\cdot)$'in (parametrelerde) doğrusal olduğunu varsayarsak: 
+$$y = \beta_0 + \beta_1 x_1 + \beta_2 x_2 +\ldots+ \beta_p x_p + \epsilon$$
+ekonometri uygulamalarında yaygın olarak kullanılan doğrusal regresyon problemini elde ederiz. 
+
+* **Ekonometri**nin odak noktası modelin bilinmeyen parametre vektörünün, $\mathbf{\beta}$, sapmasız (mümkün değilse, tutarlı) ve etkin tahminidir. 
+
+* İktisat bakımından anlamlı yorumlama yapabilme ön plandadır. 
+* Pratikte Çok üzerinde durulmayan bir nokta: gözlem sayısı, $n$, $\mathbf{X}$ değişken sayısından ( $p$ ) çok daha büyük olmalıdır: $n>>p$ 
+
+* OLS yöntemi $p>n$ durumunda çalışmaz.  
+
+
+---
+# Ekonometri ve Makine Öğrenmesi
+
+* Makine Öğrenmesi (ML) ve Ekonometri farkı: 
+
+>Makine öğrenmesi çıktı değişkeninin kestirimine, yani $\hat{y}$’ya yoğunlaşır. Ekonometrinin odağında ise $\hat{\beta}_j$, $j=1,2,\ldots,p$, vardır. (Mullainathan ve Spiess, 2017)
+
+* Ekonometri: $x_j$'nin $y$ üzerindeki nedensel (causal) etkisi ne kadardır? (ölçüm problemi).
+
+* Ekonometri: nedensel etkilerin sapmasız/tutarlı ve etkin (en düşük varyanslı) tahmini ön planda. İktisat teorisi yol gösterici. 
+
+* **ML**: $y$’nin kestiriminde en başarılı modellerin verilerden öğrenilmesi (yani tahmin edilmesi) ön planda 
+
+* Ekonometri ve ML arasındaki sınırlar çok keskin değil. ML algoritmaları ekonometrik modellemede faydalı olabileceği gibi iktisat teorisi de ML uygulamalarında kullanılabilir.
+
+
+---
+# Kestirim Başarısının Ölçümü
+
+- Tahmin doğruluğu (accuracy) tipik olarak Ortalama Hata Karesi (Mean Squared Error - MSE) ile ölçülür
+
+- Modelin $y = f(x) + \epsilon$ olduğunu, tahminin ise $\hat{f}(x)$ ile gösterildiğini varsayalım. 
+
+- Böyle bir regresyon problemi için Ortalama Hata Karesi (MSE) aşağıdaki gibi tanımlanabilir: 
+$$MSE = \frac{1}{n}\sum_{i=1}^{n}(y_i - \hat{f}(x_i))^2$$
+- Burada $n$ gözlemden oluşan bir **eğitim** (training) veri seti kullanılmıştır. 
+
+---
+
+# MSE iyi bir ölçüt mü? 
+
+- Tipik olarak bir gözetimli öğrenme probleminde eğitim verisinde MSE en küçük olacak şekilde tahmin yapılır. Örnek: Sıradan En Küçük Kareler tahmininde kalıntı kareleri toplamını minimum yapan katsayı tahminleri bulunur. 
+
+- Bir makine öğrenmesi uygulamasında asıl amaç eğitim verisinde modelin performansının ne olduğu değildir. 
+
+- Önemli olan tahminde (eğitimde) **kullanılmamış** yeni bir veri setinde nasıl performans gösterdiğidir. 
+
+- Eğitimde kullanılmayan, sadece kestirim performansının (doğruluğunun) değerlendirilmesinde kullanılan veri setine **test** verileri denir. 
+
+- Eğitim MSE'nin en küçük olması test MSE'nin de en küçük olacağı anlamına gelmez. 
+
+---
+
+# Test MSE 
+
+- Modelin esnekliği arttıkça MSE(eğitim) azalır. Aşırı uyum (overfitting) tehlikesi vardır. 
+
+- Eğitim Verileri: $\{Y_i, \mathbf{X}_i\}_{i=1}^n$
+
+- Test Verileri: $\{Y_{0i}, \mathbf{X}_{0i}\}_{i=1}^m$
+
+- Test MSE: 
+
+$$MSE_{test} = \frac{1}{m}\sum_{i=1}^{m}(y_{0i} - \hat{f}(x_{0i}))^2$$
+
+- Modelin eğitim verilerinden hareketle tahmininden sonra test verileri ile tahmin yapılarak 
+kolayca hesaplanabilir. 
+
+
+---
+# Aşırı uyum problemi 
+
+Bu grafikte, sırasıyla, lineer model, 4ncü derece polinom, ve 15nci derece polinom tahminleri gösteriliyor. Aşırı uyumun en önemli göstergesi tahminlerin hızlı hareket ederek zikzaklar çizmesidir.  
+
+```{r, echo=FALSE, out.width = "100%", fig.align='center'}
+knitr::include_graphics("img/overfit2.png")
+``` 
+
+
+---
+
+# Aşırı uyum ve makine öğrenmesi
+
+- Makine öğrenmesi yaklaşımında amaç eğitim verilerinde hatanın en küçük olması değildir. Asıl amaç yeni veri setindeki kestirim başarısıdır. (out-of-sample prediction error). 
+
+- Ancak pratikte elimizde sadece bir veri kümesi vardır. Bu verilerden hareketle örneklem-dışı kestirim başarısını nasıl tahmin edebiliriz? 
+
+- Bunun için elimizdeki verileri rassal olarak iki gruba ayırabiliriz: Örneğin verilerin %80'ini modelin eğitilmesinde, kalan %20'sini ise kestirim hatasının hesaplanmasında kullanabiliriz (test verileri). 
+
+- Buna geçerleme (validation) yaklaşımı denir. Pratikte iki yaklaşım kullanılabilir: (1) Biri-hariç çapraz geçerleme, (2) k-katlı çapraz geçerleme. 
+
+- Zaman serileri için belirli bir t zamanına kadar olan verilerle modeli tahmin edip, t+1, t+2, ...., zamanları için öngörü yapabiliriz. Zaman sırasının değişmemesi gerekir. 
+
+---
+name: gecerleme 
+
+# Biri-hariç Çapraz Geçerleme 
+### LOOCV (Leave-one-out Cross Validation)
+
+ 
+.pull-left[
+* Gözlemlerden sadece biri geçerlemede kullanılır; geriye kalan (n-1) gözlem modelin eğitiminde kullanılır. 
+* Bu süreç her seferinde bir gözlem eğitimden dışlanacak şekilde n kere tekrarlanır ve her biri için $MSE_i$ elde edilir.
+* Bu $n$ MSE değerinin ortalaması test hata tahminidir: 
+$$\mathrm{CV}_{(n)}=\frac{1}{n} \sum_{i=1}^{n} \mathrm{MSE}_{i}$$
+]
+.pull-right[
+```{r, echo=FALSE, out.width = "100%", fig.align='center'}
+knitr::include_graphics("img/cv1.PNG")
+```  
+]
+
+---
+# $k$-Katlı Çapraz Geçerleme
+## $k$-Fold Cross Validation
+.pull-left[
+* Biri-hariç çapraz geçerleme $n$ büyük olduğunda hesaplamada zorluk çıkarabilir. 
+* Alternatif olarak gözlemler rassal şekilde $k$ gruba (kat) ayrılabilir. 
+* Sırasıyla her kat geçerleme seti olarak kullanılır; geriye kalan gözlemlerle model eğitilir. 
+* Sonuçta elimizde $k$ tane MSE değeri vardır. Test hata tahmini bunların ortalamasıdır: 
+$$\mathrm{CV}_{(k)}=\frac{1}{k} \sum_{i=1}^{k} \mathrm{MSE}_{i}$$
+]
+.pull-right[
+```{r, echo=FALSE, out.width = "100%", fig.align='center'}
+knitr::include_graphics("img/cv2.PNG")
+```  
+]
+
+
+---
+# Zaman Serisi Verileri 
+* Zaman serisi verileriyle öngörü modellerin örneklem-dışı (out-of-sample) öngörü başarısı değerlendirilirken iki yaklaşım benimsenebilir.
+
+* Geleneksel Yaklaşım ve Çapraz Geçerleme Yaklaşımı
+
+* Zaman serileri genellikle türdeş ve bağımsız (iid) olmaz. Ayrıca verilerdeki kronolojik yapının bozulmaması gerekir. Bu nedenle rassal örneklemeyle çapraz geçerleme yapamayız. 
+
+**Geleneksel Yaklaşım**
+```{r, echo=FALSE, out.width = "70%", fig.align='center'}
+knitr::include_graphics("img/zamancv1.PNG")
+```  
+* Veriler eğitim ve test kısımlarına ayrılır. Test verileriyle öngörü hataları hesaplanır.
+
+
+---
+# Çapraz Geçerleme 
+
+**Zaman Serisi Çapraz Geçerleme**  
+```{r, echo=FALSE, out.width = "70%", fig.align='center'}
+knitr::include_graphics("img/zamancv2.PNG")
+```  
+
+
+* Öngörüler Biri-Hariç çapraz geçerlemede olduğu gibi bir test gözleminden hareketle hesaplanır. 
+* İzleyen adımda bir önceki test gözlemi eğitim setine eklenir ve model tekrar tahmin edilir. Bu modelden hareketle yeni bir öngörü oluşturulur. 
+* Tüm test verileri için aynı işlem yapılır. En sonunda öngörü hatalarının ortalaması hesaplanır. 
+
+
+
+    
+    
