@@ -41,7 +41,10 @@ class: my-medium-font
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 Sys.setlocale("LC_ALL","turkish")
 ```
-
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = TRUE)
+```
 
 
 # Plan
