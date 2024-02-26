@@ -21,7 +21,7 @@ Finansal Ekonometri (YTU MP İktisat TYL) ders notları
 
 1. Giriş: [html](docs/Giris.html)  
 
-2. Temel Kavramlar: [html](docs/Temelk.html)  
+2. Temel Kavramlar: [pdf](docs/Temelk.pdf)  
 
 3. R Programı  
     - R Base: <https://htastan.github.io/R-Giris/R-Base.html>
