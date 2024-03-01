@@ -80,7 +80,7 @@ Finansal Ekonometri (YTU MP İktisat TYL) ders notları
 <br/>
 
 11. Finansal zaman serileriyle volatilite (oynaklık) modellemesi, ARCH, GARCH, EGARCH, GJR-GARCH, GARCH-in-mean modelleri. 
-    - Sunum notları: [html](docs/zaman_serileri4.html)  
+    - Sunum notları: [html](docs/zaman_serileri5.html)  
     - Uygulamalar: [html](R/Uygulama-Zaman-serileri-5.html) | [RMarkdown](R/Uygulama-Zaman-serileri-5.Rmd)
 <br/>
 <br/>
