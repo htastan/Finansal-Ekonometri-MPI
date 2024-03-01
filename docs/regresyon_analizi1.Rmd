@@ -119,7 +119,7 @@ Ceteris Paribus eğitim düzeyindeki 1 yıllık değişim, saat başına ücretl
 
 
 ---
-class: clear
+
 # Örnek: Eğitim düzeyi ve saatlik ücretler 
 
 
@@ -136,7 +136,7 @@ wage %>% ggplot(aes(educ,wage)) +
   theme_bw()
 ```
 
-```{r, echo=FALSE, out.width = "80%", fig.align='center'}
+```{r, echo=FALSE, out.width = "70%", fig.align='center'}
 knitr::include_graphics("img/educ-wage-plot1.png")
 ``` 
 
