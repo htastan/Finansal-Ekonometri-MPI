@@ -6,6 +6,7 @@ institute: Yıldız Teknik Üniversitesi - MP İktisat TYL Programı
 #date: " "
 output: 
   xaringan::moon_reader:
+    self_contained: true
     css: [default, metropolis]
     lib_dir: libs
     nature:
@@ -15,8 +16,7 @@ output:
       countIncrementalSlides: no
       ratio: '16:9'
   html_document:
-    df_print: paged
-  pdf_document: default
+    df_print: paged 
 
 
 ---
