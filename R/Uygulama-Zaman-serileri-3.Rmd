@@ -169,11 +169,21 @@ summary(var1)
 # Serial korelasyon testi, kalıntılar white noise olmalı
 sertest <- serial.test(var1, lags.pt = 12, type = "PT.asymptotic")
 sertest
-plot(sertest, names = "dlbist100" ) 
-plot(sertest, names = "dlusd" )
+```
+
+Dizisel korelasyon olmadığını söyleyen boş hipotez kabul edilebilir (p değeri yaklaşık 0.82). 
+
+Kalıntıların grafikleri: 
+```{r fig.width=15, fig.height=10}
+plot(sertest, names = "dlbist100" )
 ```
 
 
+```{r fig.width=15, fig.height=10}
+plot(sertest, names = "dlusd" )
+```
+
+Granger nedensellik testleri: 
 ```{r}
 # Granger nedensellik testi
 gc1 <- causality(var1, cause = "dlbist100")
@@ -193,14 +203,14 @@ dlusd dlbist100'ün Granger-nedeni değildir diyen boş hipotez kabul edilebilir
 
 VAR modeliyle öngörü: 
 ```{r}
-forecast(var1, h=12) %>% autoplot()
+forecast(var1, h=12) |> autoplot()
 ```
 
 
 
 # Uygulama: Konut fiyatları ve faiz ilişkisi
 
-Konut kredi faiz oranı ile konut fiyatları arasında yakın bir ilişki bekleriz. Reel faiz oranlarında bir azalma konut talebini arttırır. Kısa vadede konut arzı sabit olduğundan fiyatlar üzerinden yukarı yönlü bir baskı oluşur. Tersi durumda reel faizlerin artması ise genelde konut fiyatlarında bir azalmaya yol açmasa da enflasyonun üzerinde bir değer artışını baskılayabilir. Öyleyse, diğer herşey aynıyken konut fiyatı ile reel faizler arasında negatif yönlü bir ilişki bekleyebiliriz. Ayrıca bu iki değişken birbirini öngörmede başarılı olabilir. 
+Konut kredi faiz oranı ile konut fiyatları arasında yakın bir ilişki bekleriz. Reel faiz oranlarında bir azalma konut talebini arttırır. Kısa vadede konut arzı sabit olduğundan fiyatlar üzerinden yukarı yönlü bir baskı oluşur. Tersi durumda reel faizlerin artması ise genelde konut fiyatlarında bir azalmaya yol açmasa da enflasyonun üzerinde bir değer artışını baskılayabilir. Öyleyse, diğer herşey aynıyken konut fiyatı ile reel faizler arasında negatif yönlü bir ilişki bekleyebiliriz. Ayrıca bu iki değişken birbirini öngörmede başarılı olabilir. Bu örnekte konut fiyatları ile faiz arasında bir VAR modeli tahmin edeceğiz ve öngörü ilişkisini Granger-nedensellik testlerini kullanarak inceleyeceğiz. 
 
 ## Verilerin okutulması ve grafiksel analiz
 
@@ -216,7 +226,19 @@ load("../R/Data/faiz_kfe_veri.RData")
 head(faiz_kfe_veri)
 ```
 
-Veri seti 2010.01-2020.09 dönemini kapsıyor ve dört değişkenden oluşuyor: `kfe_tr`: Türkiye için konut fiyat endeksi (Kaynak: TCMB); `faiz`: ortalama konut kredisi faiz oranı (Kaynak: TCMB), `tufe_tr`: Tüketici Fiyat Endeksi (Kaynak: TÜİK); `enf_aa`: aydan aya TUFE büyüme oranı, `enfa_yy`: yıldan yıla TUFE büyüme oranı. `kfe_tr` ve `tufe_tr` başlangıç değeri 100 olacak şekilde orantılandırıldı. 
+Veri seti 2010.01-2020.09 dönemini kapsıyor ve dört değişkenden oluşuyor: 
+
+`kfe_tr`: Türkiye için konut fiyat endeksi (Kaynak: TCMB); 
+
+`faiz`: ortalama konut kredisi faiz oranı (Kaynak: TCMB), 
+
+`tufe_tr`: Tüketici Fiyat Endeksi (Kaynak: TÜİK); 
+
+`enf_aa`: aydan aya TUFE büyüme oranı, 
+
+`enfa_yy`: yıldan yıla TUFE büyüme oranı. 
+
+`kfe_tr` ve `tufe_tr` başlangıç değeri 100 olacak şekilde orantılandırıldı. 
 
 Verilerin zaman seriği grafiğini çizelim: 
 ```{r}
@@ -280,12 +302,45 @@ Kalıntıların ACF değerleri çok yüksek ve güçlü bağımlılığa işaret
 
 Birim kök testlerini hesaplayalım: 
 ```{r}
-# Birim kök testleri 
+# KPSS testi
+# H0: seri durağan
+# H1: seri durağan değil
+kpss1 <- ur.kpss(log(rkfe_tr))
+summary(kpss1)
+```
+
+Bu sonuca göre H0 red edilebilir (test istatistiği kritik değerlerden büyüktür). Birinci farkı alıp tekrar test edelim: 
+```{r}
+dlrkfe <- 100*diff(log(rkfe_tr))
+ggtsdisplay(dlrkfe)
+```
+
+```{r}
+# KPSS test 
+# birinci farkı alınmış seri
+summary(ur.kpss(dlrkfe))
+```
+Bu sonuca göre H0 kabul edilir (0.1352<0.46), yani dlrkfe durağandır. Böylece RKFE'nin I(1) olduğunu söyleyebiliriz. 
+
+Benzer şekilde reel faizlerin durağan olup olmadığını araştıralım. 
+```{r}
+# KPSS test 
+# reel faiz
+summary(ur.kpss(rfaiz))
+```
+Bu sonuçlara göre rfaiz durağandır (H0 kabul edilebilir, test istatistiği %2.5 kritik değerinden küçüktür). 
+
+Alternatif olarak Augmented Dickey-Fuller (ADF) birim kök testleri de yapılabilir. Bu testin boş hipotezi serinin durağan olmadığını söyler. 
+```{r}
+# ADF Birim kök testi 
+# H0: seri durağan değil 
+# H1: seri durağan (ya da trend-durağan)
 library(urca)
 # log reel KFE
 adf1 <- ur.df(log(rkfe_tr) , type = c("drift"), lags=6, selectlags="AIC")
 summary(adf1)
 ```
+
 ADF test istatistiği $-1.43$ ve %5 düzeyindeki kritik değerden $-2.88$ büyük. Konut fiyat endeksinin durağan olmadığını söyleyen boş hipotez reddedilemez (sol kuyruk testi). Seri durağan değildir. 
 
 Acaba trend eklediğimizde de aynı sonuç mu çıkıyor? Bu durumda alternatif hipotez serinin trend-durağan olduğunu söyler. 
@@ -308,7 +363,7 @@ summary(adf3)
 
 Bu durumda $ADF=-4.51$ ve bu %1 düzeyindeki kritik değerden küçüktür. Öyleyse serinin durağan olmadığını söyleyen boş hipotez reddedilir. Konut fiyat endeksinin büyüme oranı durağandır (logaritmik birinci fark büyüme oranını verir). Farkın grafiği ve korelogramı aşağıdaki gibidir: 
 ```{r}
-dlrkfe <- 100*diff(log(kfe_tr))
+dlrkfe <- 100*diff(log(rkfe_tr))
 ggtsdisplay(dlrkfe) 
 ```
 
@@ -321,7 +376,7 @@ summary(adf4)
 
 ADF test istatistiği $-3.62$ ve bu değer %1 kritik değerden küçük (mutlak olarak büyük). Bu nedenle boş hipotez reddedilir. Faiz serisi durağandır. 
 
-Özetlersek KFE serisi seviyede durağan değil ancak birinci farkı durağan. Reel faizler ise seviyede durağan. Bu durumda takip edilebilecek bir yol KFE serisinin birinci farkı ile faizler arasında bir dinamik model kurmaktır. Bu amaçla VAR modelleri kullanılabilir. 
+Özetlersek RKFE serisi seviyede durağan değil ancak birinci farkı durağan. Reel faizler ise seviyede durağan. Bu durumda takip edilebilecek bir yol KFE serisinin birinci farkı ile faizler arasında bir dinamik model kurmaktır. Bu amaçla VAR modelleri kullanılabilir. 
 
 
 ## VAR Modeli ve Granger-nedensellik analizi
@@ -355,7 +410,7 @@ Reel faizler ev fiyatlarındaki reel artışların Granger-nedeni midir?
 causality(var1, cause = "rfaiz")
 ```
 
-Test istatistiği F-Test = 0.18815 ve p-değeri 0.90 olarak hesaplandı. Buna göre boş hipotez reddedilemez. Reel faizler konut fiyat artışlarının Granger-nedeni değildir. Bir başka ifadeyle reel faizler reel konut fiyat artışlarını öngörmede başarılı değildir. Konut fiyat artışlarını etkileyen ve öngörmede daha başarılı olacak faktörlerin modele eklenmesi gerekir. 
+Test istatistiği F-Test = 0.20 ve p-değeri 0.89 olarak hesaplandı. Buna göre boş hipotez reddedilemez. Reel faizler konut fiyat artışlarının Granger-nedeni değildir. Bir başka ifadeyle reel faizler reel konut fiyat artışlarını öngörmede başarılı değildir. Konut fiyat artışlarını etkileyen ve öngörmede daha başarılı olacak faktörlerin modele eklenmesi gerekir. 
 
 Ev fiyatlarındaki reel artışlar konut kredi faizinin Granger-nedeni midir?
 ```{r}
@@ -363,7 +418,7 @@ Ev fiyatlarındaki reel artışlar konut kredi faizinin Granger-nedeni midir?
 causality(var1, cause = "dlrkfe")
 ```
 
-Test istatistiği F-Test = 2.6869 ve p-değeri=0.047. Zayıf olsa da boş hipotez aleyhinde kanıt mevcut diyebiliriz (%5 anlamlılık düzeyinde). Öyleyse, en azından bu basit modelde, ev fiyatlarındaki reel artışlar reel faizleri öngörmede başarılı olduğu söylenebilir. 
+Test istatistiği F-Test = 2.44 ve p-değeri=0.06. Zayıf olsa da boş hipotez aleyhinde kanıt mevcut diyebiliriz. Öyleyse, en azından bu basit modelde, ev fiyatlarındaki reel artışların reel faizleri öngörmede başarılı olduğu söylenebilir. 
 
 
 
