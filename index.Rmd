@@ -79,9 +79,15 @@ Finansal Ekonometri (YTU MP İktisat TYL) ders notları
 <br/>
 <br/>
 
-11. Finansal zaman serileriyle volatilite (oynaklık) modellemesi, ARCH, GARCH, EGARCH, GJR-GARCH, GARCH-in-mean modelleri. 
-    - Sunum notları: [html](docs/zaman_serileri5.html)  
+11. Finansal zaman serileriyle volatilite (oynaklık) modellemesi, ARCH, GARCH, EGARCH, GJR-GARCH, GARCH-in-mean modelleri.
+    - Sunum notları: [html](docs/zaman_serileri5.html)
     - Uygulamalar: [html](R/Uygulama-Zaman-serileri-5.html) | [RMarkdown](R/Uygulama-Zaman-serileri-5.Rmd)
+<br/>
+<br/>
+
+12. Kovaryans ve korelasyon modelleri, EWMA, Çok değişkenli GARCH modelleri (VECH, BEKK), Sabit ve Dinamik Koşullu Korelasyon (CCC, DCC) modelleri, Uygulamalar: Riske Maruz Değer (VaR), koşullu CAPM betası, dinamik hedge oranı.
+    - Sunum notları: [html](docs/zaman_serileri6.html)
+    - Uygulamalar: [html](R/Uygulama-Zaman-serileri-6.html) | [RMarkdown](R/Uygulama-Zaman-serileri-6.Rmd)
 <br/>
 <br/>
 

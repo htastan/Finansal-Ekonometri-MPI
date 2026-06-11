@@ -1,0 +1,576 @@
+---
+title: 'Uygulama - Kovaryans ve Korelasyon Modelleri'
+author:
+  name: Prof. Dr. Hüseyin Taştan
+  affiliation: Yıldız Teknik Üniversitesi
+date: ""
+output:
+  html_document:
+    number_sections: yes
+    theme: readable
+    highlight: haddock
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+    keep_md: no
+  word_document:
+    toc: yes
+    toc_depth: '3'
+subtitle: Finansal Ekonometri (MPİ-TYL)
+---
+<style type="text/css">
+body{
+  font-size: 12pt;
+}
+code.r{
+  font-size: 12pt;
+}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Hazırlık
+
+Bu uygulamada slaytlarda incelediğimiz kovaryans ve korelasyon modellerini R'da tahmin edeceğiz. Tek değişkenli GARCH modelleri için `{rugarch}`, çok değişkenli GARCH (MGARCH) modelleri için ise `{rmgarch}` paketini kullanacağız. `{rmgarch}` paketi kurulu değilse önce `install.packages("rmgarch")` komutuyla kurunuz.
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(rugarch)
+library(rmgarch)
+library(readxl)
+```
+
+Uygulama planımız şöyle:
+
+1. **Tek değişkenli GARCH ile Riske Maruz Değer (VaR)**: tek bir varlık için VaR hesabı ve geriye dönük test (backtesting),
+2. **EWMA kovaryans ve korelasyon**: BIST-100 ve USD/TRY örneği,
+3. **DCC modeli ile uluslararası piyasalar arasında yayılım**: S&P500, FTSE 100 ve DAX,
+4. **DCC ile portföy VaR hesabı**: zamana göre değişen kovaryans öngörüleriyle,
+5. **Koşullu (zamana göre değişen) CAPM betası**: THYAO ve BIST-100,
+6. **Dinamik hedge oranı**: S&P500 spot ve vadeli işlem sözleşmesi (Brooks örneği).
+
+
+# Tek değişkenli GARCH ile Riske Maruz Değer (VaR)
+
+Riske maruz değer (Value-at-Risk, VaR), belli bir dönemde belli bir olasılıkla aşılmayacak olan en yüksek kaybı gösterir. Örneğin %1 düzeyinde günlük VaR, getirilerin yalnızca %1 olasılıkla altına düşeceği eşik değerdir.
+
+VaR kavramını en kolay getiri dağılımı üzerinden görebiliriz. **VaR, getiri dağılımının sol kuyruğundaki bir yüzdelik (quantile) değerden başka bir şey değildir**: dağılımın sol kuyruğunda, altında kalan alanın $\alpha$ olasılığına eşit olduğu nokta. Aşağıdaki grafik standartlaştırılmış getiriler için bunu göstermektedir:
+
+```{r, fig.width=8, fig.height=4.5}
+alpha <- 0.01
+q_norm <- qnorm(alpha)   # %1 yüzdelik değer: -2.33
+
+dens <- tibble(x = seq(-4.5, 4.5, length.out = 600), y = dnorm(x))
+
+dens %>% ggplot(aes(x, y)) +
+  geom_line(linewidth = 0.8) +
+  geom_area(data = filter(dens, x <= q_norm), fill = "firebrick", alpha = 0.6) +
+  geom_vline(xintercept = q_norm, linetype = "dashed", color = "firebrick") +
+  annotate("text", x = q_norm, y = 0.30, hjust = 1.05,
+           label = paste0("VaR = ", round(q_norm, 2)), color = "firebrick") +
+  annotate("text", x = -3.4, y = 0.035, label = "P(r < VaR) = 0.01",
+           color = "firebrick", size = 3.5) +
+  labs(x = "Standartlaştırılmış getiri", y = "Yoğunluk",
+       title = "VaR: getiri dağılımının sol kuyruk yüzdelik değeri",
+       subtitle = "Taralı alan = %1 olasılık (normal dağılım)")
+```
+
+Getiriler standart normal dağılıyorsa, %1 olasılıklı kayıp eşiği $-2.33$'tür: getirilerin yalnızca %1'i bu değerin altına düşer. Genel olarak, ortalaması $\mu$ ve standart sapması $\sigma_t$ olan getiriler için $t$ dönemi VaR değeri:
+$$VaR_t = \mu + F^{-1}(\alpha)\, \sigma_t$$
+Burada $F^{-1}(\alpha)$ varsayılan dağılımın $\alpha$ yüzdelik değeridir. Bu formül iki kritik girdiye dikkat çekmektedir:
+
+1. **Dağılımın biçimi** ( $F$ ): kuyruklar gerçekte olduğundan ince varsayılırsa (örneğin kalın kuyruklu veriye normal dağılım) VaR riski olduğundan düşük gösterir — yukarıdaki grafikte taralı alan gerçekte %1'den büyük olur.
+2. **Volatilite** ( $\sigma_t$ ): volatilite kümelenmesi nedeniyle $\sigma_t$ zamana bağlı olarak değişir; dağılımın kuyruğu sakin dönemlerde içeri, çalkantılı dönemlerde dışarı kayar. Bu nedenle GARCH modelleri VaR hesabının doğal bir girdisidir.
+
+**Bu uygulamanın çok değişkenli modellere ihtiyaç duymadığına dikkat ediniz**: tek varlık için tek değişkenli GARCH yeterlidir. Kovaryanslar, birden fazla varlıktan oluşan portföylerin VaR hesabında gerekecek (bkz. 4. bölüm).
+
+Önceki uygulamadan tanıdığımız S&P500 günlük verilerini kullanalım:
+
+```{r}
+load("../R/Data/SP500.rda")
+SP500 <- SP500 %>%
+  mutate(return = 100*(log(close)-lag(log(close), 1, order_by = date)))
+sp500_returns <- SP500$return[-1]
+sp500_dates <- SP500$date[-1]
+```
+
+GARCH(1,1) modelini iki farklı hata dağılımıyla tahmin edelim: normal ve Student-t. Finansal getirilerin kalın kuyruklu olduğunu biliyoruz; bu nedenle t dağılımının kuyruk riskini daha iyi yakalamasını bekleriz.
+
+```{r}
+# Normal dağılımlı GARCH(1,1)
+spec_norm <- ugarchspec(
+  variance.model = list(model = "sGARCH", garchOrder = c(1,1)),
+  mean.model = list(armaOrder = c(0,0)),
+  distribution.model = "norm")
+fit_norm <- ugarchfit(spec_norm, sp500_returns)
+
+# Student-t dağılımlı GARCH(1,1)
+spec_std <- ugarchspec(
+  variance.model = list(model = "sGARCH", garchOrder = c(1,1)),
+  mean.model = list(armaOrder = c(0,0)),
+  distribution.model = "std")
+fit_std <- ugarchfit(spec_std, sp500_returns)
+coef(fit_std)
+```
+
+t dağılımının serbestlik derecesi (`shape`) yaklaşık `r round(coef(fit_std)["shape"],1)` olarak tahmin edilmiştir. Bu değeri nasıl yorumlamalıyız? Student-t dağılımında serbestlik derecesi $v$ kuyrukların kalınlığını kontrol eder ve $v\to\infty$ iken t dağılımı normal dağılıma yakınsar. Pratikte $v\geq 30$ civarında iki dağılım birbirinden ayırt edilemeyecek kadar benzeşir (temel istatistikten hatırlayacağınız, t tablosu yerine z tablosunun kullanılabildiği klasik eşik). Dolayısıyla:
+
+- $v$ tahmini 30'a yakın ya da büyük çıksaydı "normal dağılım yeterliymiş" diyecektik;
+- $v\approx 5$ gibi küçük bir değer ise kuyrukların normalden **belirgin biçimde kalın** olduğunu gösterir.
+
+Kuyruk kalınlığını basıklık (kurtosis) cinsinden de sayısallaştırabiliriz: t dağılımının basıklığı $v>4$ için $3+\frac{6}{v-4}$ formülüyle verilir. $v=5$ için bu değer $9$'dur — normal dağılımın basıklığı olan $3$'ün üç katı. Yani model, uç getirilerin normal dağılımın ima ettiğinden çok daha sık gerçekleştiğini söylemektedir. İki dağılımın sol kuyruğunu yakınlaştırarak karşılaştıralım:
+
+```{r, fig.width=8, fig.height=4.5}
+shape_hat <- coef(fit_std)["shape"]
+
+tails <- tibble(x = seq(-6, -1.5, length.out = 400)) %>%
+  mutate(Normal = dnorm(x),
+         `Student-t (v = 5)` = ddist("std", x, mu = 0, sigma = 1, shape = shape_hat))
+
+tails %>%
+  pivot_longer(-x, names_to = "dagilim", values_to = "yogunluk") %>%
+  ggplot(aes(x, yogunluk, color = dagilim)) +
+  geom_line(linewidth = 0.9) +
+  geom_vline(xintercept = qnorm(0.01), linetype = "dashed", color = "gray40") +
+  scale_y_log10() +   # logaritmik ölçek: kuyruklardaki farkı görünür kılar
+  scale_color_manual(values = c("Normal" = "darkorange", "Student-t (v = 5)" = "darkblue")) +
+  labs(x = "Standartlaştırılmış getiri", y = "Yoğunluk (log ölçek)",
+       title = "Sol kuyruk yakınlaştırması: normal ve Student-t dağılımları",
+       subtitle = "Her iki dağılımın da varyansı 1'dir; kesikli çizgi: normal dağılımın %1 yüzdelik değeri") +
+  theme(legend.position = "bottom", legend.title = element_blank())
+```
+
+Dikkat: dikey eksen logaritmik ölçektedir; doğrusal ölçekte kuyruk yoğunlukları sıfıra çok yakın olduğu için fark gözle seçilemez. Grafik sorunun kaynağını netleştirmektedir:
+
+- İki yoğunluk $-2.55$ civarında kesişir; bu noktanın solunda (yani asıl kuyrukta) t dağılımının yoğunluğu normalin üzerindedir ve fark içeri gidildikçe **katlanarak** büyür: $-4$'te t yoğunluğu normalin yaklaşık 14 katı, $-5$'te 400 katı, $-6$'da ise on binlerce katıdır. Normal dağılım "$-5$ standart sapmalık bir gün" için pratik olarak sıfır olasılık verirken, t dağılımı bunun pekâlâ mümkün olduğunu söyler. (1987 "Kara Pazartesi" çöküşü gibi gerçekleşmiş uç olaylar normal dağılım altında milyarlarca yılda bir bile beklenmeyecek olaylardır.)
+- Sonuç olarak getiriler gerçekte t dağılımına uyuyorsa ve biz normal varsayarsak kuyruk riskini sistematik olarak küçümseriz. Örneğin normal dağılımın %1 yüzdelik değeri olan $-2.33$'ün altına düşme olasılığı, $v=5$ ile t dağılımında %1 değil yaklaşık **%1.5**'tir. Doğru %1 eşiği t dağılımında daha soldadır: $-2.61$. Birazdan geriye dönük testlerde bu küçümsemenin sonuçlarını sayısal olarak da göreceğiz.
+
+Şimdi her iki model için %1 düzeyinde VaR serilerini hesaplayalım. Normal dağılımda yüzdelik değer `qnorm()` ile, standartlaştırılmış t dağılımında ise `rugarch::qdist()` ile hesaplanır:
+
+```{r}
+alpha <- 0.01
+# koşullu standart sapmalar
+sigma_norm <- as.numeric(sigma(fit_norm))
+sigma_std  <- as.numeric(sigma(fit_std))
+# VaR serileri
+VaR_norm <- coef(fit_norm)["mu"] + qnorm(alpha) * sigma_norm
+VaR_std  <- coef(fit_std)["mu"] +
+  qdist("std", alpha, mu = 0, sigma = 1, shape = coef(fit_std)["shape"]) * sigma_std
+```
+
+Getirileri ve VaR sınırını birlikte çizelim. VaR sınırının altında kalan getiriler (kırmızı noktalar) **ihlal** (violation) olarak adlandırılır:
+
+```{r, fig.width=9, fig.height=5}
+VaR_data <- tibble(date = sp500_dates,
+                   return = sp500_returns,
+                   VaR_norm = VaR_norm,
+                   VaR_std = VaR_std,
+                   violation = return < VaR_std)
+
+VaR_data %>% ggplot(aes(date, return)) +
+  geom_line(color = "gray50", linewidth = 0.3) +
+  geom_line(aes(y = VaR_std, color = "GARCH-t %1 VaR")) +
+  geom_line(aes(y = VaR_norm, color = "GARCH-normal %1 VaR"), linetype = "dashed") +
+  geom_point(data = filter(VaR_data, violation),
+             aes(y = return), color = "red", size = 1) +
+  scale_color_manual(values = c("GARCH-t %1 VaR" = "darkblue",
+                                "GARCH-normal %1 VaR" = "darkorange")) +
+  labs(x = "", y = "Günlük getiri, %",
+       title = "S&P500 günlük getiriler ve %1 VaR sınırı",
+       subtitle = "Kırmızı noktalar: VaR ihlalleri (GARCH-t)") +
+  theme(legend.position = "bottom", legend.title = element_blank())
+```
+
+Grafik VaR'ın temel özelliğini çok net göstermektedir: VaR sınırı sabit değildir; sakin dönemlerde sıfıra yaklaşır, çalkantılı dönemlerde (2008 küresel finansal krizi, 2020 COVID şoku) hızla genişler. Sabit (koşulsuz) standart sapmayla hesaplanan bir VaR bu dinamiği tümüyle gözden kaçırırdı.
+
+## Geriye dönük test (backtesting)
+
+VaR modeli doğruysa, %1 VaR sınırının yaklaşık olarak gözlemlerin %1'inde ihlal edilmesi gerekir. Gerçekleşen ihlal sayısını beklenen ihlal sayısıyla karşılaştıran Kupiec testini `rugarch::VaRTest()` fonksiyonuyla yapabiliriz:
+
+```{r}
+# Normal dağılım varsayımıyla
+test_norm <- VaRTest(alpha, actual = sp500_returns, VaR = as.numeric(VaR_norm))
+# t dağılımı varsayımıyla
+test_std <- VaRTest(alpha, actual = sp500_returns, VaR = as.numeric(VaR_std))
+
+tibble(model = c("GARCH-normal", "GARCH-t"),
+       beklenen_ihlal = c(test_norm$expected.exceed, test_std$expected.exceed),
+       gercek_ihlal = c(test_norm$actual.exceed, test_std$actual.exceed),
+       kupiec_p = c(test_norm$uc.LRp, test_std$uc.LRp))
+```
+
+Sonuçlar öğreticidir: yaklaşık 3770 gözlemde beklenen ihlal sayısı 37 iken, normal dağılımlı model 103 ihlal üretmiştir — yani gerçek kuyruk riskini ciddi biçimde **olduğundan düşük** göstermektedir. t dağılımı ihlal sayısını 65'e düşürerek önemli bir iyileşme sağlamış, ancak Kupiec testine göre hâlâ yetersiz kalmıştır (p-değeri < 0.05). Bu, %1 gibi uç bir kuyruk olasılığında VaR hesabının ne kadar zor olduğunu göstermektedir. Uygulamada daha esnek dağılımlar (çarpık t), asimetrik volatilite modelleri (EGARCH, GJR) veya uç değerler teorisi (EVT) kullanılabilir.
+
+
+# EWMA kovaryans ve korelasyon: BIST-100 ve USD/TRY
+
+Şimdi iki seri arasındaki kovaryansın ve korelasyonun zamana bağlı değişimini en basit yöntemle, üstel ağırlıklı hareketli ortalamayla (EWMA, RiskMetrics yaklaşımı) modelleyelim. Slaytlardan hatırlayalım; EWMA varyans ve kovaryans güncelleme denklemi:
+$$h_{ij,t} = \lambda h_{ij,t-1} + (1-\lambda)x_{t-1}y_{t-1}$$
+Varyanslar için $i=j$ (yani $x=y$), kovaryans için $i\neq j$ olur. $\lambda$ sönüm parametresidir; RiskMetrics aylık verilerde $\lambda = 0.97$ kullanmaktadır.
+
+Aylık BIST-100 endeksi ve USD/TRY kuru verilerini okutalım (2003:01-2021:12):
+
+```{r}
+load("../R/Data/bist_usd.rda")
+head(bist_usd)
+```
+
+Logaritmik getirileri hesaplayalım:
+
+```{r}
+bist_usd <- bist_usd %>%
+  mutate(tarih = as.Date(paste0(date, "-01")),
+         r_bist = 100*(log(bist100) - lag(log(bist100))),
+         r_usd  = 100*(log(usd) - lag(log(usd)))) %>%
+  drop_na()
+```
+
+```{r, fig.width=9, fig.height=5}
+bist_usd %>%
+  pivot_longer(cols = c(r_bist, r_usd), names_to = "seri", values_to = "getiri") %>%
+  mutate(seri = recode(seri, r_bist = "BIST-100", r_usd = "USD/TRY")) %>%
+  ggplot(aes(tarih, getiri)) +
+  geom_line(color = "steelblue") +
+  facet_wrap(~seri, ncol = 1) +
+  labs(x = "", y = "Aylık getiri, %")
+```
+
+İki seri arasındaki örneklem (koşulsuz) korelasyonu:
+
+```{r}
+cor(bist_usd$r_bist, bist_usd$r_usd)
+```
+
+Korelasyon negatiftir: TL'nin değer kaybettiği (USD/TRY'nin yükseldiği) aylarda hisse senedi getirileri ortalamada düşmektedir. Peki bu ilişki zaman içinde sabit midir? EWMA özyinelemesini (recursion) bir döngüyle hesaplayalım. Başlangıç değerleri olarak örneklem varyans ve kovaryansını kullanıyoruz:
+
+```{r}
+lambda <- 0.97
+x <- bist_usd$r_bist - mean(bist_usd$r_bist)
+y <- bist_usd$r_usd - mean(bist_usd$r_usd)
+n <- length(x)
+
+h11 <- h22 <- h12 <- numeric(n)
+h11[1] <- var(x)
+h22[1] <- var(y)
+h12[1] <- cov(x, y)
+
+for (t in 2:n) {
+  h11[t] <- lambda * h11[t-1] + (1-lambda) * x[t-1]^2          # BIST varyansı
+  h22[t] <- lambda * h22[t-1] + (1-lambda) * y[t-1]^2          # USD varyansı
+  h12[t] <- lambda * h12[t-1] + (1-lambda) * x[t-1] * y[t-1]   # kovaryans
+}
+
+# zamana göre değişen korelasyon:
+rho_ewma <- h12 / sqrt(h11 * h22)
+```
+
+```{r, fig.width=9, fig.height=5}
+tibble(tarih = bist_usd$tarih, rho = rho_ewma) %>%
+  ggplot(aes(tarih, rho)) +
+  geom_line(color = "steelblue", linewidth = 0.8) +
+  geom_hline(yintercept = cor(bist_usd$r_bist, bist_usd$r_usd),
+             color = "firebrick", linetype = "dashed") +
+  geom_hline(yintercept = 0, color = "gray") +
+  labs(x = "", y = "Korelasyon",
+       title = "BIST-100 ve USD/TRY getirileri arasında EWMA korelasyonu",
+       subtitle = "Kesikli çizgi: örneklem (sabit) korelasyonu")
+```
+
+Grafik sabit korelasyon varsayımının ne kadar yanıltıcı olabileceğini göstermektedir:
+
+- Korelasyon örneklem boyunca negatiftir ancak büyüklüğü önemli ölçüde değişmektedir: 2009-2016 döneminde $-0.5$ civarına kadar güçlenmiş, sonrasında zayıflamıştır.
+- Küresel finansal kriz sonrası dönemde (sermaye akımlarının ve risk iştahının belirleyici olduğu yıllarda) "TL değer kaybı + hisse düşüşü" birlikteliği güçlüdür. Bu dönemde döviz tutmak hisse senedi pozisyonu için doğal bir koruma (hedge) işlevi görmüştür.
+- Örneklemin sonunda (2021 sonundaki kur şoku) korelasyon hızla sıfıra yaklaşıp pozitife dönmüştür: bu dönemde kur hızla yükselirken BIST-100 de (nominal TL bazında) yükselmiştir. Bu, korelasyon dinamiklerinin yapısal olarak da değişebileceğini gösteren çarpıcı bir örnektir.
+
+EWMA yaklaşımının kısıtlarını hatırlayalım: tek parametre ( $\lambda$ ) tüm seriler için aynıdır, varyans-kovaryans matrisinin pozitif tanımlılığı garanti değildir ve ortalamaya dönüş özelliği yoktur. Şimdi bu kısıtları aşan DCC modeline geçelim.
+
+
+# DCC modeli: Uluslararası piyasalar arasında yayılım
+
+Dinamik koşullu korelasyon (DCC) modeli (Engle, 2002) iki aşamada tahmin edilir:
+
+1. **Birinci aşama**: her seri için ayrı bir tek değişkenli GARCH modeli tahmin edilir ve koşullu varyanslar elde edilir.
+2. **İkinci aşama**: standartlaştırılmış kalıntılardan hareketle korelasyon dinamiği $Q_t$ tahmin edilir ve koşullu korelasyon matrisi $R_t$ oluşturulur.
+
+$$H_t = D_t R_t D_t$$
+
+Uluslararası hisse senedi piyasaları arasındaki dinamik korelasyonları inceleyelim. Üç büyük endeksin günlük verilerini kullanacağız: S&P500 (ABD), FTSE 100 (Birleşik Krallık) ve DAX (Almanya), 2007-2021:
+
+```{r}
+load("../R/Data/SP500.rda")
+load("../R/Data/FTSE.rda")
+load("../R/Data/DAX.rda")
+
+# her endeks için logaritmik getiri hesapla ve tarihe göre birleştir
+sp <- SP500 %>% transmute(date, sp500 = 100*(log(close) - lag(log(close))))
+ft <- FTSE_tibble %>% transmute(date, ftse = 100*(log(close) - lag(log(close))))
+dx <- DAX %>% transmute(date, dax = 100*(log(close) - lag(log(close))))
+
+uc_data <- sp %>%
+  inner_join(ft, by = "date") %>%
+  inner_join(dx, by = "date") %>%
+  drop_na()
+dim(uc_data)
+```
+
+Üç piyasanın ortak işlem günlerinden oluşan yaklaşık 3650 gözlemlik bir veri setimiz var. Önce koşulsuz (örneklem) korelasyon matrisine bakalım:
+
+```{r}
+cor(uc_data %>% select(-date))
+```
+
+FTSE-DAX korelasyonu (0.86) diğerlerinden belirgin biçimde yüksektir. Bu beklenen bir sonuçtur: iki Avrupa piyasası hem ekonomik olarak bütünleşiktir hem de aynı saat diliminde işlem görmektedir. ABD-Avrupa korelasyonlarının görece düşük olmasında işlem saatlerinin yalnızca kısmen örtüşmesinin de payı vardır (asenkron işlem etkisi).
+
+## DCC modelinin tahmini
+
+`{rmgarch}` paketinde DCC spesifikasyonu üç adımda kurulur: önce her seri için tek değişkenli GARCH spesifikasyonu (`ugarchspec`), sonra bunların listesi (`multispec`), en son DCC spesifikasyonu (`dccspec`):
+
+```{r}
+# 1. adım: tek değişkenli GARCH(1,1) spesifikasyonu
+uspec <- ugarchspec(
+  variance.model = list(model = "sGARCH", garchOrder = c(1,1)),
+  mean.model = list(armaOrder = c(0,0)),
+  distribution.model = "norm")
+
+# 2. adım: her üç seri için aynı spesifikasyonu kullan
+mspec <- multispec(replicate(3, uspec))
+
+# 3. adım: DCC(1,1) spesifikasyonu
+dcc_spec <- dccspec(uspec = mspec, dccOrder = c(1,1), distribution = "mvnorm")
+```
+
+```{r}
+# tahminde tarihleri koruyabilmek için satır isimli bir data frame kullanıyoruz
+returns3 <- uc_data %>% select(-date) %>% as.data.frame()
+rownames(returns3) <- as.character(uc_data$date)
+
+dcc_fit <- dccfit(dcc_spec, data = returns3)
+dcc_fit
+```
+
+Çıktıda her seriye ait tek değişkenli GARCH parametrelerinin (`omega`, `alpha1`, `beta1`) yanı sıra ortak DCC parametreleri `dcca1` ve `dccb1` yer almaktadır. Bu iki parametre korelasyon dinamiğinin kalıcılığını ölçer; GARCH'taki $\alpha_1$ ve $\beta_1$ ile benzer şekilde yorumlanır. Toplamları ( $\approx 0.97$ ) 1'e yakın olduğu için korelasyon şokları oldukça **kalıcıdır**: korelasyonlar yükseldiğinde uzun süre yüksek kalma eğilimindedir.
+
+## Dinamik korelasyonlar
+
+Koşullu korelasyon matrislerini `rcor()` fonksiyonuyla elde edebiliriz. Bu fonksiyon $N\times N\times T$ boyutlu bir dizi (array) döndürür:
+
+```{r}
+rc <- rcor(dcc_fit)
+dim(rc)
+# örneğin son güne ait korelasyon matrisi:
+rc[,,dim(rc)[3]]
+```
+
+Üç ikili korelasyonu zaman serisi olarak çizelim:
+
+```{r, fig.width=9, fig.height=7}
+cor_data <- tibble(date = uc_data$date,
+                   `S&P500 - FTSE` = rc[1,2,],
+                   `S&P500 - DAX` = rc[1,3,],
+                   `FTSE - DAX` = rc[2,3,])
+
+cor_data %>%
+  pivot_longer(-date, names_to = "cift", values_to = "korelasyon") %>%
+  ggplot(aes(date, korelasyon)) +
+  geom_line(color = "steelblue") +
+  facet_wrap(~cift, ncol = 1) +
+  labs(x = "", y = "Koşullu korelasyon",
+       title = "DCC modelinden dinamik koşullu korelasyonlar, 2007-2021")
+```
+
+Bu grafik uluslararası piyasalar arasındaki **yayılım (spillover/contagion)** dinamiklerini özetlemektedir. Temel gözlemler:
+
+- **Korelasyonlar sabit olmaktan çok uzaktır**: örneğin S&P500-DAX korelasyonu 0.3-0.4 bandından 0.8'in üzerine kadar geniş bir aralıkta dalgalanmaktadır. CCC (sabit koşullu korelasyon) modelinin bu veriler için uygun olmadığı açıktır.
+- **Kriz dönemlerinde korelasyonlar sıçramaktadır**: 2008-2009 küresel finansal krizi, 2010-2012 Euro Bölgesi borç krizi ve Mart 2020 COVID şokunda tüm ikili korelasyonlar belirgin biçimde yükselmiştir. Örneğin COVID döneminde (2020 Mart-Haziran) FTSE-DAX korelasyonu ortalama 0.89'a çıkmıştır.
+- Bu bulgu **finansal bulaşma** (contagion) literatürünün temel sonucuyla uyumludur: kriz dönemlerinde şoklar piyasalar arasında daha güçlü yayılır. Yatırımcı açısından kötü haber şudur: uluslararası çeşitlendirmenin sağladığı riskten korunma faydası, tam da en çok ihtiyaç duyulduğu anda (kriz dönemlerinde) azalmaktadır.
+- FTSE-DAX korelasyonu her dönemde en yüksek olandır; coğrafi/ekonomik bütünleşme ve eşzamanlı işlem saatleri bunda etkilidir.
+
+
+# DCC ile Portföy VaR hesabı
+
+Slaytlarda gördüğümüz gibi, birden fazla varlıktan oluşan bir portföyün VaR hesabı kovaryansları gerektirir. $w$ portföy ağırlıkları vektörü olmak üzere portföyün koşullu varyansı:
+$$\sigma_{p,t}^2 = w' H_t w$$
+
+Üç endekse eşit ağırlık veren ( $w_i = 1/3$ ) bir portföy düşünelim. DCC modelinden elde edilen $H_t$ matrisleriyle portföyün koşullu standart sapmasını hesaplayalım. Koşullu kovaryans matrisleri `rcov()` ile elde edilir:
+
+```{r}
+H <- rcov(dcc_fit)   # N x N x T boyutlu dizi
+w <- rep(1/3, 3)
+
+sigma_p <- sapply(1:dim(H)[3], function(t) sqrt(t(w) %*% H[,,t] %*% w))
+
+# karşılaştırma: sabit (koşulsuz) kovaryans matrisiyle portföy standart sapması
+sigma_const <- sqrt(t(w) %*% cov(uc_data %>% select(-date)) %*% w)
+sigma_const
+```
+
+Portföy getirisi ve %1 VaR (normallik varsayımıyla):
+
+```{r, fig.width=9, fig.height=5}
+port_data <- tibble(date = uc_data$date,
+                    r_port = as.matrix(uc_data %>% select(-date)) %*% w %>% as.numeric(),
+                    VaR_dcc = qnorm(0.01) * sigma_p,
+                    VaR_const = qnorm(0.01) * as.numeric(sigma_const))
+
+port_data %>% ggplot(aes(date, r_port)) +
+  geom_line(color = "gray50", linewidth = 0.3) +
+  geom_line(aes(y = VaR_dcc, color = "DCC VaR (dinamik)")) +
+  geom_line(aes(y = VaR_const, color = "Sabit kovaryans VaR"), linetype = "dashed") +
+  scale_color_manual(values = c("DCC VaR (dinamik)" = "darkblue",
+                                "Sabit kovaryans VaR" = "firebrick")) +
+  labs(x = "", y = "Günlük getiri, %",
+       title = "Eşit ağırlıklı uluslararası portföy: getiriler ve %1 VaR") +
+  theme(legend.position = "bottom", legend.title = element_blank())
+```
+
+```{r}
+# ihlal oranları
+mean(port_data$r_port < port_data$VaR_const)  # sabit kovaryans
+mean(port_data$r_port < port_data$VaR_dcc)    # DCC
+```
+
+Sabit kovaryans matrisine dayanan VaR (yatay kesikli çizgi) sakin dönemlerde gereksiz ölçüde ihtiyatlı, kriz dönemlerinde ise tehlikeli biçimde iyimserdir: 2008 ve 2020'de gerçekleşen büyük kayıplar sabit VaR sınırını defalarca ve büyük farklarla aşmıştır. DCC'ye dayalı VaR ise riskin arttığı dönemlerde genişleyerek bu kayıpları çok daha iyi yakalamaktadır. Üstelik kriz dönemlerinde yalnızca varyanslar değil **korelasyonlar da** yükseldiği için, DCC portföy riskindeki artışı tek değişkenli modellerin ima edeceğinden daha da güçlü yansıtır.
+
+
+# Koşullu CAPM betası: THYAO ve BIST-100
+
+CAPM'e göre bir varlığın sistematik riski beta katsayısıyla ölçülür:
+$$\beta_i = \frac{Cov(r_i, r_m)}{Var(r_m)}$$
+
+Standart uygulamada beta, sabit bir katsayı olarak OLS ile tahmin edilir. Oysa kovaryans ve varyans zamana bağlı olarak değişiyorsa beta da değişir. MGARCH modelinin koşullu momentleriyle **koşullu beta** her dönem için hesaplanabilir:
+$$\beta_{i,t} = \frac{h_{im,t}}{h_{mm,t}}$$
+
+Türk Hava Yolları (THYAO) hissesinin BIST-100'e göre betasını inceleyelim. Veri setinde 2009-2019 dönemine ait günlük fiyatlar var:
+
+```{r}
+load("../R/Data/hisse_fiyat.rda")
+head(hisse_fiyat, 3)
+
+thy_data <- hisse_fiyat %>%
+  transmute(date,
+            r_thy = 100*(log(THYAO) - lag(log(THYAO))),
+            r_bist = 100*(log(BIST100) - lag(log(BIST100)))) %>%
+  drop_na()
+```
+
+Önce sabit (OLS) betayı tahmin edelim:
+
+```{r}
+capm_ols <- lm(r_thy ~ r_bist, data = thy_data)
+summary(capm_ols)
+```
+
+OLS betası yaklaşık `r round(coef(capm_ols)[2], 2)` bulunmuştur. Şimdi iki değişkenli DCC modeliyle koşullu betayı hesaplayalım:
+
+```{r}
+returns2 <- thy_data %>% select(r_thy, r_bist) %>% as.data.frame()
+rownames(returns2) <- as.character(thy_data$date)
+
+dcc_spec2 <- dccspec(uspec = multispec(replicate(2, uspec)),
+                     dccOrder = c(1,1), distribution = "mvnorm")
+dcc_capm <- dccfit(dcc_spec2, data = returns2)
+
+H2 <- rcov(dcc_capm)
+beta_t <- H2[1,2,] / H2[2,2,]   # h_im,t / h_mm,t
+```
+
+```{r, fig.width=9, fig.height=5}
+tibble(date = thy_data$date, beta = beta_t) %>%
+  ggplot(aes(date, beta)) +
+  geom_line(color = "steelblue") +
+  geom_hline(yintercept = coef(capm_ols)[2], color = "firebrick", linetype = "dashed") +
+  geom_hline(yintercept = 1, color = "gray") +
+  labs(x = "", y = expression(beta[t]),
+       title = "THYAO için koşullu (zamana göre değişen) CAPM betası",
+       subtitle = "Kesikli çizgi: sabit OLS betası")
+```
+
+Koşullu beta sabit OLS betasının ( $\approx 1.07$ ) etrafında geniş bir bantta dalgalanmaktadır:
+
+- 2009-2010 döneminde beta 1'in belirgin biçimde altındadır (yıllık ortalama $\approx 0.77$): bu dönemde THYAO piyasa geneline göre daha az sistematik risk taşımaktadır.
+- 2016 sonrasında beta kalıcı olarak 1'in üzerine çıkmış, 2017'de yıllık ortalama 1.3'e ulaşmıştır. Hissenin piyasa hassasiyeti zaman içinde artmıştır.
+- Sabit beta kullanmak, örneğin portföy riski veya sermaye maliyeti hesabında, dönemine göre sistematik riski olduğundan yüksek ya da düşük göstermek anlamına gelir.
+
+
+# Dinamik hedge oranı: S&P500 spot ve vadeli sözleşme
+
+Son uygulamamız Brooks'un ders kitabındaki riskten korunma örneğidir. Spot piyasada uzun pozisyon tutan bir yatırımcı, vadeli işlem (futures) sözleşmesinde kısa pozisyon alarak fiyat riskinden korunabilir. Slaytlardan hatırlayalım: korunmalı portföyün varyansını minimize eden **optimal hedge oranı**:
+$$\beta^* = \frac{h_{SF}}{h_F} = \frac{Cov(r_S, r_F)}{Var(r_F)}$$
+
+Örneklem momentleriyle hesaplanırsa sabit bir oran elde edilir; MGARCH koşullu momentleriyle hesaplanırsa **zamana göre değişen** hedge oranı elde edilir:
+$$OHR_t = \frac{h_{SF,t}}{h_{F,t}}$$
+
+Brooks'un `SandPhedge` veri setini kullanalım: S&P500 endeksinin spot ve vadeli sözleşme fiyatları, aylık, 1997:09-2018:03:
+
+```{r}
+sandp <- read_excel("../R/Data/SandPhedge.xls")
+head(sandp, 3)
+
+sandp <- sandp %>%
+  mutate(date = as.Date(Date),
+         r_spot = 100*(log(Spot) - lag(log(Spot))),
+         r_fut  = 100*(log(Futures) - lag(log(Futures)))) %>%
+  drop_na()
+```
+
+Sabit hedge oranı (spot getirilerin vadeli getiriler üzerine OLS regresyonundaki eğim katsayısı):
+
+```{r}
+hedge_ols <- lm(r_spot ~ r_fut, data = sandp)
+summary(hedge_ols)
+```
+
+Spot ve vadeli getiriler neredeyse bire bir hareket ettiği için (korelasyon $\approx 0.99$) sabit hedge oranı 1'e yakındır ( $\approx 0.98$ ). Şimdi DCC modeliyle dinamik hedge oranını hesaplayalım:
+
+```{r}
+returns_h <- sandp %>% select(r_spot, r_fut) %>% as.data.frame()
+rownames(returns_h) <- as.character(sandp$date)
+
+dcc_hedge <- dccfit(dcc_spec2, data = returns_h)
+
+Hh <- rcov(dcc_hedge)
+ohr_t <- Hh[1,2,] / Hh[2,2,]   # h_SF,t / h_F,t
+```
+
+```{r, fig.width=9, fig.height=5}
+tibble(date = sandp$date, OHR = ohr_t) %>%
+  ggplot(aes(date, OHR)) +
+  geom_line(color = "steelblue") +
+  geom_hline(yintercept = coef(hedge_ols)[2], color = "firebrick", linetype = "dashed") +
+  geom_hline(yintercept = 1, color = "gray") +
+  labs(x = "", y = "Optimal hedge oranı",
+       title = "S&P500 için dinamik hedge oranı (DCC)",
+       subtitle = "Kesikli çizgi: sabit OLS hedge oranı")
+```
+
+Dinamik hedge oranı çoğunlukla 0.9-1.0 bandında dalgalanmakta, bazı dönemlerde 0.7'ye kadar düşmektedir. Korunma stratejilerinin performansını, korunmalı portföy getirisinin varyansıyla karşılaştıralım:
+
+```{r}
+tibble(strateji = c("Korunmasız (beta = 0)",
+                    "Naif hedge (beta = 1)",
+                    "Sabit OLS hedge orani",
+                    "Dinamik hedge orani (DCC)"),
+       varyans = c(var(sandp$r_spot),
+                   var(sandp$r_spot - sandp$r_fut),
+                   var(sandp$r_spot - coef(hedge_ols)[2]*sandp$r_fut),
+                   var(sandp$r_spot - ohr_t*sandp$r_fut)))
+```
+
+Sonuçları yorumlayalım:
+
+- Korunma stratejilerinin tamamı portföy varyansını çarpıcı biçimde (%99'a yakın) azaltmaktadır; spot-vadeli korelasyonu çok yüksek olduğu için bu beklenen bir sonuçtur.
+- Sabit OLS oranı ve dinamik DCC oranı bu örneklemde neredeyse aynı performansı vermektedir; her ikisi de naif ( $\beta=1$ ) stratejiden daha iyidir.
+- Dinamik oranın sabit orana örneklem içinde belirgin üstünlük sağlayamaması şaşırtıcı değildir: spot-vadeli korelasyonu o kadar yüksek ve istikrarlıdır ki sabit oran zaten iyi bir yaklaşımdır. Brooks, Henry ve Persand (2002) FTSE 100 için **günlük** verilerle ve örneklem dışı öngörülerle yaptıkları karşılaştırmada MGARCH'a dayalı dinamik hedge oranının en düşük portföy varyansını verdiğini bulmuştur. Dinamik yaklaşımın faydası, korelasyonun zayıfladığı/istikrarsızlaştığı varlık çiftlerinde ve örneklem dışı uygulamalarda ortaya çıkar.
+
+
+# Alıştırmalar
+
+1. İlk bölümdeki VaR hesabını %5 düzeyi için tekrarlayınız. Normal ve t dağılımlarının ihlal oranlarını karşılaştırınız. Sonuç %1 düzeyindekinden farklı mı? Neden?
+2. EWMA uygulamasını $\lambda = 0.94$ ile tekrarlayınız. Korelasyon serisi nasıl değişti? $\lambda$ küçüldükçe ne oluyor?
+3. DCC uygulamasına Nikkei 225 endeksini de ekleyiniz (`Data/Nikkei.rda`). Japonya piyasasının ABD ve Avrupa ile korelasyonları hakkında ne söyleyebilirsiniz? (İpucu: işlem saatleri hiç örtüşmüyor.)
+4. Koşullu beta uygulamasını veri setindeki başka bir hisse (örneğin GARAN veya EREGL) için tekrarlayınız ve THYAO ile karşılaştırınız.
+
+
+<div class="tocify-extend-page" data-unique="tocify-extend-page" style="height: 0;"></div>
