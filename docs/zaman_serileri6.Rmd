@@ -451,6 +451,32 @@ $$\beta^*=\frac{h_{SF}}{h_{F}}=\frac{Cov(r_S,r_F)}{Var(r_F)}$$
 - Bu, spot getirilerin vadeli getiriler üzerine regresyonundaki eğim katsayısıdır; örneklem momentleriyle hesaplanırsa **sabit** bir hedge oranı verir.
 
 ---
+# Sayısal örnek: Çapraz korunma (cross-hedging)
+
+- Korunmak istenen varlık ile vadeli sözleşmenin dayanak varlığı birebir aynı olmayabilir; bu duruma **çapraz korunma** (cross-hedging) denir.
+
+- **Senaryo**: Bir havayolu şirketi 3 ay sonra 1.000.000 galon uçak yakıtı satın alacaktır ve fiyatların yükselmesinden endişe etmektedir. Uçak yakıtı üzerine yeterince likit bir vadeli sözleşme yoktur; şirket, fiyat hareketleri uçak yakıtına çok benzeyen **kalorifer yakıtı** (heating oil) vadeli sözleşmelerini kullanacaktır (sözleşme büyüklüğü: 42.000 galon).
+
+- Geçmiş verilerden hesaplanan istatistikler: $\sigma_S=0.30$ (uçak yakıtı spot getiri volatilitesi), $\sigma_F=0.40$ (kalorifer yakıtı vadeli getiri volatilitesi), $\rho=0.80$ (iki getiri arasındaki korelasyon).
+
+- $h_{SF}=\rho\,\sigma_S\sigma_F$ olduğundan optimal hedge oranı korelasyon ve standart sapmalar cinsinden yazılabilir:
+$$\beta^*=\frac{h_{SF}}{h_F}=\frac{\rho\,\sigma_S\sigma_F}{\sigma_F^2}=\rho\,\frac{\sigma_S}{\sigma_F}=0.80\times\frac{0.30}{0.40}=0.60$$
+
+---
+# Çapraz korunma örneği: Yorum ve sözleşme sayısı
+
+- **Yorum**: Şirket spot pozisyonunun tamamını (bire bir) değil, yalnızca **%60'ını** hedge etmelidir. Vadeli piyasa ( $\sigma_F=\%40$ ) spot piyasadan ( $\sigma_S=\%30$ ) daha oynak olduğu için %100 korunma riski azaltmak yerine artırır (**aşırı korunma**, overhedging).
+
+- **Sözleşme sayısı**:
+$$N=\beta^*\times\frac{\text{spot pozisyon büyüklüğü}}{\text{vadeli sözleşme büyüklüğü}}=0.60\times\frac{1.000.000}{42.000}\approx 14.3$$
+
+- Şirket bugün yaklaşık **14 adet** kalorifer yakıtı vadeli sözleşmesinde **uzun pozisyon** almalıdır.
+
+- Pozisyonun yönüne dikkat: riske açıklık *gelecekte yapılacak bir alım* olduğu için fiyat artışına karşı koruma vadeli sözleşme **alarak** sağlanır. Elinde varlık tutan (ya da gelecekte satacak olan) bir üretici ise tersine **kısa** pozisyon alırdı.
+
+- **MGARCH bağlantısı**: $\sigma_{S}$, $\sigma_{F}$ ve $\rho$ zamana bağlı olarak değişiyorsa optimal oran da değişir: $\beta_t^*=\rho_t\,\sigma_{S,t}/\sigma_{F,t}$. Şirket sözleşme sayısını her dönem güncellemelidir (izleyen slayt).
+
+---
 # Zamana göre değişen hedge oranı
 
 - Varyans ve kovaryanslar zamana bağlı olarak değişiyorsa optimal hedge oranı da sabit olamaz. MGARCH modelinin bir adım sonrası öngörüleriyle **dinamik (zamana göre değişen) hedge oranı**:
