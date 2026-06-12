@@ -565,12 +565,64 @@ Sonuçları yorumlayalım:
 - Dinamik oranın sabit orana örneklem içinde belirgin üstünlük sağlayamaması şaşırtıcı değildir: spot-vadeli korelasyonu o kadar yüksek ve istikrarlıdır ki sabit oran zaten iyi bir yaklaşımdır. Brooks, Henry ve Persand (2002) FTSE 100 için **günlük** verilerle ve örneklem dışı öngörülerle yaptıkları karşılaştırmada MGARCH'a dayalı dinamik hedge oranının en düşük portföy varyansını verdiğini bulmuştur. Dinamik yaklaşımın faydası, korelasyonun zayıfladığı/istikrarsızlaştığı varlık çiftlerinde ve örneklem dışı uygulamalarda ortaya çıkar.
 
 
+## Korunmanın yönü: Uzun ve kısa korunma
+
+Korunma stratejisinin **yönünü** belirleyen şey, fiziki (spot) piyasadaki pozisyonumuzdur:
+
+- **Uzun korunma (long hedge)**: Gelecekte bir varlığı *satın alacak* olan tarafın stratejisidir (yakıt alacak havayolu şirketi, buğday alacak un fabrikası, döviz borcunu ödeyecek ithalatçı). Risk, fiyatların **artmasıdır**; vadeli piyasada **uzun pozisyon** (alım) açılır. Fiyatlar artarsa vadeli sözleşmeden elde edilen kâr, artan fiziki alım maliyetini telafi eder.
+- **Kısa korunma (short hedge)**: Gelecekte bir varlığı *satacak* olan ya da varlığı *halihazırda elinde tutan* tarafın stratejisidir (hasat yapacak çiftçi, hisse portföyü tutan yatırımcı, döviz tahsil edecek ihracatçı). Risk, fiyatların **düşmesidir**; vadeli piyasada **kısa pozisyon** (satış) açılır.
+
+Optimal hedge oranı $\beta^*$ pozisyonun **büyüklüğünü**, spot pozisyonun niteliği ise **yönünü** belirler. Slaytlardaki havayolu örneği (uçak yakıtı / kalorifer yakıtı vadeli sözleşmesi) bir *uzun korunma* ve aynı zamanda bir *çapraz korunma* (cross-hedging) örneğiydi. Aşağıda iki örnek daha geliştiriyoruz.
+
+## Örnek: Hisse portföyünün endeks vadelisiyle korunması (kısa korunma)
+
+Bir portföy yöneticisi 10.000.000 TL değerinde bir hisse senedi portföyü tutmaktadır ve önümüzdeki aylarda piyasanın düşmesinden endişe etmektedir. Portföyü satıp nakde geçmek yerine (işlem maliyetleri, vergi, likidite nedeniyle) BIST-30 endeks vadeli işlem sözleşmeleriyle **kısa korunma** yapmaya karar verir.
+
+Burada güzel bir bağlantı ortaya çıkar: portföy getirilerinin endeks vadeli getirileri üzerine regresyonundaki eğim katsayısı — yani optimal hedge oranı — aslında portföyün **betasıdır**:
+$$\beta^* = \frac{Cov(r_P, r_F)}{Var(r_F)} = \beta_P$$
+
+Yani CAPM betası ile minimum varyans hedge oranı aynı büyüklüktür. Portföyün betası 1.25 olsun (portföy piyasadan daha hareketli). Endeks vadeli sözleşmesinin nominal değerinin (vadeli fiyat × sözleşme çarpanı) 200.000 TL olduğunu varsayalım. Satılması gereken sözleşme sayısı:
+
+```{r}
+beta_p <- 1.25          # portföy betası (= optimal hedge oranı)
+portfoy <- 10000000     # spot pozisyon, TL
+kontrat <- 200000       # bir vadeli sözleşmenin nominal değeri, TL
+
+N <- beta_p * portfoy / kontrat
+N
+```
+
+Yönetici yaklaşık **62-63 sözleşme satmalıdır** (kısa pozisyon). Beta 1'den büyük olduğu için sözleşme sayısı, pozisyonun nominal değerinin ima ettiği sayıdan (50) daha fazladır: portföy piyasadan daha oynak olduğu için daha güçlü bir koruma gerekir.
+
+Koşullu beta bölümünde gördüğümüz gibi beta zamana bağlı olarak değişiyorsa, MGARCH modelinden elde edilen $\beta_{P,t}$ ile sözleşme sayısı her dönem güncellenebilir — bu, dinamik hedge oranının pratikteki karşılığıdır.
+
+## Örnek: İthalatçının kur riski (uzun korunma)
+
+Bir ithalatçı firma 3 ay sonra 1.000.000 USD tutarında bir ödeme yapacaktır. Risk, USD/TRY kurunun **yükselmesidir**; dolayısıyla **uzun korunma** gerekir. Borsa İstanbul VİOP'ta işlem gören USD/TRY vadeli sözleşmesinin büyüklüğü 1.000 USD'dir.
+
+Bu örnekte korunmak istenen varlık ile vadeli sözleşmenin dayanak varlığı **aynıdır** (ikisi de USD/TRY). Spot ve vadeli getiriler arasındaki korelasyon 1'e, volatiliteleri birbirine çok yakındır; dolayısıyla $\beta^*=\rho\,\sigma_S/\sigma_F\approx 1$ (tam korunma — çapraz korunmaya gerek yoktur):
+
+```{r}
+h_star <- 1
+pozisyon <- 1000000   # USD
+kontrat_usd <- 1000   # USD
+
+N_usd <- h_star * pozisyon / kontrat_usd
+N_usd
+```
+
+Firma bugün **1.000 adet USD/TRY vadeli sözleşmesi satın almalıdır** (uzun pozisyon). Üç ay içinde kur yükselirse vadeli pozisyonun kârı, artan ödeme maliyetini telafi eder. (Aynı firma ihracatçı olsaydı — yani 3 ay sonra 1.000.000 USD *tahsil edecek* olsaydı — risk kurun düşmesi olur ve 1.000 sözleşme **satardı**: kısa korunma.)
+
+Çapraz korunma ihtiyacı döviz piyasasında da doğabilir: örneğin alacak EUR cinsinden ama piyasada yalnızca USD/TRY sözleşmesi likitse, EUR/TRY getirilerinin USD/TRY vadeli getirileriyle korelasyonu ve volatilite oranı üzerinden $\beta^*=\rho\,\sigma_S/\sigma_F$ hesaplanır ve genellikle 1'den farklı çıkar.
+
+
 # Alıştırmalar
 
 1. İlk bölümdeki VaR hesabını %5 düzeyi için tekrarlayınız. Normal ve t dağılımlarının ihlal oranlarını karşılaştırınız. Sonuç %1 düzeyindekinden farklı mı? Neden?
 2. EWMA uygulamasını $\lambda = 0.94$ ile tekrarlayınız. Korelasyon serisi nasıl değişti? $\lambda$ küçüldükçe ne oluyor?
 3. DCC uygulamasına Nikkei 225 endeksini de ekleyiniz (`Data/Nikkei.rda`). Japonya piyasasının ABD ve Avrupa ile korelasyonları hakkında ne söyleyebilirsiniz? (İpucu: işlem saatleri hiç örtüşmüyor.)
 4. Koşullu beta uygulamasını veri setindeki başka bir hisse (örneğin GARAN veya EREGL) için tekrarlayınız ve THYAO ile karşılaştırınız.
+5. Bir un fabrikası 6 ay sonra 5.000 ton buğday satın alacaktır. Buğday üzerine likit vadeli sözleşme bulunmadığı için mısır vadeli sözleşmeleri kullanılacaktır (sözleşme büyüklüğü 100 ton). Buğday spot getiri volatilitesi $\sigma_S=0.25$, mısır vadeli getiri volatilitesi $\sigma_F=0.35$, korelasyon $\rho=0.70$'tir. (a) Korunmanın yönü ne olmalıdır (uzun mu kısa mı)? Neden? (b) Optimal hedge oranını hesaplayınız. (c) Kaç sözleşme alınmalı/satılmalıdır?
 
 
 <div class="tocify-extend-page" data-unique="tocify-extend-page" style="height: 0;"></div>

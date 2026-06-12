@@ -745,6 +745,17 @@ name: hedge
 - Bu, spot getirilerin vadeli getiriler üzerine regresyonundaki eğim katsayısıdır; örneklem momentleriyle hesaplanırsa **sabit** bir hedge oranı verir.
 
 ---
+# Korunmanın yönü: Uzun ve kısa korunma
+
+- Korunma stratejisinin yönünü belirleyen şey, fiziki (spot) piyasadaki pozisyonumuzdur:
+
+- **Uzun korunma (long hedge)**: Gelecekte bir varlığı **satın alacak** olan tarafın stratejisidir (örneğin yakıt alacak havayolu şirketi, buğday alacak un fabrikası, döviz borcunu ödeyecek ithalatçı). Risk, fiyatların **artmasıdır**. Bu riske karşı vadeli piyasada **uzun pozisyon** (alım) açılır: fiyatlar artarsa vadeli sözleşmeden elde edilen kâr, artan fiziki alım maliyetini telafi eder.
+
+- **Kısa korunma (short hedge)**: Gelecekte bir varlığı **satacak** olan ya da o varlığı **halihazırda elinde tutan** tarafın stratejisidir (örneğin hasat yapacak çiftçi, petrol satacak üretici, hisse portföyü tutan yatırımcı, döviz tahsil edecek ihracatçı). Risk, fiyatların **düşmesidir**. Bu riske karşı vadeli piyasada **kısa pozisyon** (satış) açılır.
+
+- Optimal hedge oranı `\(\beta^*\)` pozisyonun **büyüklüğünü**, spot pozisyonun niteliği ise **yönünü** belirler.
+
+---
 # Sayısal örnek: Çapraz korunma (cross-hedging)
 
 - Korunmak istenen varlık ile vadeli sözleşmenin dayanak varlığı birebir aynı olmayabilir; bu duruma **çapraz korunma** (cross-hedging) denir.
@@ -764,9 +775,7 @@ name: hedge
 - **Sözleşme sayısı**:
 `$$N=\beta^*\times\frac{\text{spot pozisyon büyüklüğü}}{\text{vadeli sözleşme büyüklüğü}}=0.60\times\frac{1.000.000}{42.000}\approx 14.3$$`
 
-- Şirket bugün yaklaşık **14 adet** kalorifer yakıtı vadeli sözleşmesinde **uzun pozisyon** almalıdır.
-
-- Pozisyonun yönüne dikkat: riske açıklık *gelecekte yapılacak bir alım* olduğu için fiyat artışına karşı koruma vadeli sözleşme **alarak** sağlanır. Elinde varlık tutan (ya da gelecekte satacak olan) bir üretici ise tersine **kısa** pozisyon alırdı.
+- Şirket bugün yaklaşık **14 adet** kalorifer yakıtı vadeli sözleşmesinde **uzun pozisyon** almalıdır. Bu bir **uzun korunma** örneğidir: riske açıklık gelecekte yapılacak bir alım olduğu için koruma vadeli sözleşme alınarak sağlanır (bkz. önceki slayt).
 
 - **MGARCH bağlantısı**: `\(\sigma_{S}\)`, `\(\sigma_{F}\)` ve `\(\rho\)` zamana bağlı olarak değişiyorsa optimal oran da değişir: `\(\beta_t^*=\rho_t\,\sigma_{S,t}/\sigma_{F,t}\)`. Şirket sözleşme sayısını her dönem güncellemelidir (izleyen slayt).
 
