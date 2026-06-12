@@ -205,9 +205,31 @@ Burada $\Xi_t=(u_{1t},u_{2t})'$ hata vektörü, $\psi_{t-1}$ ise $t-1$ dönemine
 - İki değişkenli durumda bile $C$ $(3\times 1)$, $A$ ve $B$ $(3\times 3)$ olmak üzere toplam **21 parametre** tahmin edilmelidir. Değişken sayısı arttıkça parametre sayısı hızla artar.
 
 ---
+# VECH modeli: Matris işlemleri
+
+- Modeldeki terimleri adım adım açalım. Hata vektörünün kendi devriğiyle (dış) çarpımı $2\times 2$ bir matristir:
+$$\Xi_{t-1}\Xi_{t-1}'=\begin{bmatrix}u_{1t-1}\\ u_{2t-1}\end{bmatrix}\begin{bmatrix}u_{1t-1} & u_{2t-1}\end{bmatrix}=\begin{bmatrix}u_{1t-1}^2 & u_{1t-1}u_{2t-1}\\ u_{2t-1}u_{1t-1} & u_{2t-1}^2\end{bmatrix}$$
+
+- Matris simetrik olduğu için VECH operatörü yalnızca köşegeni ve köşegen altını alır (sıralama: iki varyans terimi, sonra kovaryans terimi):
+$$VECH(\Xi_{t-1}\Xi_{t-1}')=\begin{bmatrix}u_{1t-1}^2\\ u_{2t-1}^2\\ u_{1t-1}u_{2t-1}\end{bmatrix},\qquad VECH(H_{t-1})=\begin{bmatrix}h_{11t-1}\\ h_{22t-1}\\ h_{12t-1}\end{bmatrix}$$
+
+- Yani hata karelerinin ve çapraz çarpımının gecikmeleri (ARCH kısmı) ile varyans-kovaryansların gecikmeleri (GARCH kısmı) modelin açıklayıcılarıdır.
+
+---
+# VECH modeli: Matris işlemleri
+
+- Tüm matrisleri açık biçimde yazarsak iki değişkenli VECH sistemi şöyle görünür:
+
+$$\underbrace{\begin{bmatrix}h_{11t}\\ h_{22t}\\ h_{12t}\end{bmatrix}}_{VECH(H_t)}=\underbrace{\begin{bmatrix}c_{11}\\ c_{21}\\ c_{31}\end{bmatrix}}_{C}+\underbrace{\begin{bmatrix}a_{11}&a_{12}&a_{13}\\ a_{21}&a_{22}&a_{23}\\ a_{31}&a_{32}&a_{33}\end{bmatrix}}_{A}\underbrace{\begin{bmatrix}u_{1t-1}^2\\ u_{2t-1}^2\\ u_{1t-1}u_{2t-1}\end{bmatrix}}_{VECH(\Xi_{t-1}\Xi_{t-1}')}+\underbrace{\begin{bmatrix}b_{11}&b_{12}&b_{13}\\ b_{21}&b_{22}&b_{23}\\ b_{31}&b_{32}&b_{33}\end{bmatrix}}_{B}\underbrace{\begin{bmatrix}h_{11t-1}\\ h_{22t-1}\\ h_{12t-1}\end{bmatrix}}_{VECH(H_{t-1})}$$
+
+- Parametre sayısı buradan kolayca görülür: $C$ vektöründe 3, $A$ ve $B$ matrislerinde 9'ar olmak üzere toplam $3+9+9=21$.
+
+- Matris çarpımını satır satır yaparsak üç denklem elde ederiz (izleyen slayt).
+
+---
 # VECH modeli: Açık yazım
 
-- İki değişkenli VECH modelinin üç denklemi açık olarak şöyle yazılabilir:
+- Örneğin birinci satır: $h_{11t}$ denklemi, $A$ matrisinin birinci satırı ile $VECH(\Xi_{t-1}\Xi_{t-1}')$ vektörünün ve $B$ matrisinin birinci satırı ile $VECH(H_{t-1})$ vektörünün çarpımından oluşur. Üç denklemin tamamı:
 
 $$\begin{aligned}
 h_{11t} &= c_{11}+a_{11}u_{1t-1}^2+a_{12}u_{2t-1}^2+a_{13}u_{1t-1}u_{2t-1}+b_{11}h_{11t-1}+b_{12}h_{22t-1}+b_{13}h_{12t-1}\\
@@ -369,6 +391,20 @@ Burada $W$ pozisyonun büyüklüğü, $z_{\alpha}$ standart normal dağılımın
 - Dikkat: VaR hesabı **tek değişkenli GARCH modellerinin de** en önemli uygulamalarından biridir. GARCH modelinden elde edilen volatilite öngörüsü $\hat{\sigma}_{t+1}$ doğrudan VaR formülünde kullanılır. Oynaklık kümelenmesi nedeniyle VaR sakin dönemlerde düşük, çalkantılı dönemlerde yüksek olur.
 
 - Normallik varsayımı kalın kuyruklar nedeniyle riski olduğundan düşük gösterebilir; alternatif olarak t dağılımı veya tarihsel simülasyon kullanılabilir.
+
+---
+# VaR: Parasal bir örnek
+
+- $W=1.000.000$ TL değerinde bir hisse senedi portföyü tutuyoruz. GARCH modelinden yarın için volatilite öngörümüz $\hat{\sigma}_{t+1}=\%1.5$ (günlük) ve $\mu\approx 0$ olsun.
+
+- Normallik varsayımıyla %1 düzeyinde günlük VaR:
+$$VaR_{t+1}=2.33\times 0.015\times 1.000.000 \approx 34.950 ~TL$$
+
+- Yorum: *yarın %99 olasılıkla kaybımız 34.950 TL'yi aşmayacaktır; bu tutarın aşılma olasılığı yalnızca %1'dir.*
+
+- VaR, volatilite öngörüsüyle birlikte **her gün değişir**: sakin bir dönemde $\hat{\sigma}_{t+1}=\%0.8$ ise VaR $\approx$ 18.640 TL'ye düşer; çalkantılı bir dönemde $\hat{\sigma}_{t+1}=\%3$ ise 69.900 TL'ye çıkar.
+
+- Dağılım varsayımı da tutarı değiştirir: kuyrukları kalın olan $t(5)$ dağılımında %1 yüzdelik değeri $-2.61$'dir; aynı volatilite öngörüsüyle ( $\%1.5$ ) VaR $\approx$ 39.100 TL olur. Normallik varsayımı riski yaklaşık 4.150 TL **olduğundan düşük** göstermektedir.
 
 ---
 # Portföy VaR hesabı ve kovaryanslar
