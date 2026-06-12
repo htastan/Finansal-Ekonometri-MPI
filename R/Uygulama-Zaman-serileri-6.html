@@ -2014,7 +2014,7 @@ kurulur: önce her seri için tek değişkenli GARCH spesifikasyonu
 ## Hannan-Quinn 7.0627
 ## 
 ## 
-## Elapsed time : 5.724687</code></pre>
+## Elapsed time : 5.593147</code></pre>
 <p>Çıktıda her seriye ait tek değişkenli GARCH parametrelerinin
 (<code>omega</code>, <code>alpha1</code>, <code>beta1</code>) yanı sıra
 ortak DCC parametreleri <code>dcca1</code> ve <code>dccb1</code> yer
@@ -2319,29 +2319,62 @@ varlık çiftlerinde ve örneklem dışı uygulamalarda ortaya çıkar.</li>
 <div id="korunmanın-yönü-uzun-ve-kısa-korunma" class="section level2" number="7.1">
 <h2><span class="header-section-number">7.1</span> Korunmanın yönü: Uzun
 ve kısa korunma</h2>
-<p>Korunma stratejisinin <strong>yönünü</strong> belirleyen şey, fiziki
-(spot) piyasadaki pozisyonumuzdur:</p>
+<p>Korunma stratejisinin <strong>yönünü</strong> belirleyen şey,
+korunulmak istenen fiyat riskinin yönüdür:</p>
+<table>
+<colgroup>
+<col width="33%" />
+<col width="33%" />
+<col width="33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Spot piyasadaki durum</th>
+<th>Maruz kalınan risk</th>
+<th>Vadeli piyasadaki pozisyon</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Gelecekte <strong>alıcı</strong> olacaksınız</td>
+<td>Fiyat <strong>artışı</strong></td>
+<td><strong>Uzun</strong> korunma (vadeli alım)</td>
+</tr>
+<tr class="even">
+<td>Gelecekte <strong>satıcı</strong> olacaksınız</td>
+<td>Fiyat <strong>düşüşü</strong></td>
+<td><strong>Kısa</strong> korunma (vadeli satış)</td>
+</tr>
+</tbody>
+</table>
 <ul>
 <li><strong>Uzun korunma (long hedge)</strong>: Gelecekte bir varlığı
 <em>satın alacak</em> olan tarafın stratejisidir (yakıt alacak havayolu
-şirketi, buğday alacak un fabrikası, döviz borcunu ödeyecek ithalatçı).
-Risk, fiyatların <strong>artmasıdır</strong>; vadeli piyasada
-<strong>uzun pozisyon</strong> (alım) açılır. Fiyatlar artarsa vadeli
-sözleşmeden elde edilen kâr, artan fiziki alım maliyetini telafi
-eder.</li>
+şirketi, buğday alacak un fabrikası, ham petrol satın alacak rafineri,
+döviz borcunu ödeyecek ithalatçı). Risk, fiyatların
+<strong>artmasıdır</strong>; vadeli piyasada <strong>uzun
+pozisyon</strong> (alım) açılır. Fiyatlar artarsa vadeli sözleşmeden
+elde edilen kâr, artan fiziki alım maliyetini telafi eder.</li>
 <li><strong>Kısa korunma (short hedge)</strong>: Gelecekte bir varlığı
 <em>satacak</em> olan ya da varlığı <em>halihazırda elinde tutan</em>
-tarafın stratejisidir (hasat yapacak çiftçi, hisse portföyü tutan
-yatırımcı, döviz tahsil edecek ihracatçı). Risk, fiyatların
-<strong>düşmesidir</strong>; vadeli piyasada <strong>kısa
+tarafın stratejisidir (hasat yapacak çiftçi, petrol üreticisi, hisse
+portföyü tutan yatırımcı, döviz tahsil edecek ihracatçı). Risk,
+fiyatların <strong>düşmesidir</strong>; vadeli piyasada <strong>kısa
 pozisyon</strong> (satış) açılır.</li>
 </ul>
-<p>Optimal hedge oranı <span class="math inline">\(\beta^*\)</span>
-pozisyonun <strong>büyüklüğünü</strong>, spot pozisyonun niteliği ise
-<strong>yönünü</strong> belirler. Slaytlardaki havayolu örneği (uçak
-yakıtı / kalorifer yakıtı vadeli sözleşmesi) bir <em>uzun korunma</em>
-ve aynı zamanda bir <em>çapraz korunma</em> (cross-hedging) örneğiydi.
-Aşağıda iki örnek daha geliştiriyoruz.</p>
+<p>Aynı emtia üzerinde iki farklı yön görülebilir: petrol
+<strong>üreticisi</strong> (satıcı konumunda) kısa korunma yaparken, ham
+petrolü girdi olarak kullanan <strong>rafineri</strong> (alıcı
+konumunda) uzun korunma yapar. Bu nedenle “hedge pozisyonu spot
+pozisyonun tersidir” şeklindeki yaygın ifade her zaman doğru değildir;
+doğru ifade şudur: <strong>korunmanın yönü, korunulmak istenen fiyat
+riskinin yönüne göre belirlenir.</strong> Optimal hedge oranı <span class="math inline">\(\beta^*\)</span> pozisyonun
+<strong>büyüklüğünü</strong>, fiyat riskinin yönü ise pozisyonun
+<strong>yönünü</strong> belirler.</p>
+<p>Slaytlardaki havayolu örneği (uçak yakıtı / kalorifer yakıtı vadeli
+sözleşmesi) bir <em>uzun korunma</em> ve aynı zamanda bir <em>çapraz
+korunma</em> (cross-hedging) örneğiydi. Aşağıda iki örnek daha
+geliştiriyoruz.</p>
 </div>
 <div id="örnek-hisse-portföyünün-endeks-vadelisiyle-korunması-kısa-korunma" class="section level2" number="7.2">
 <h2><span class="header-section-number">7.2</span> Örnek: Hisse

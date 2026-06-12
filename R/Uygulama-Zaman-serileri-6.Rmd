@@ -567,12 +567,19 @@ Sonuçları yorumlayalım:
 
 ## Korunmanın yönü: Uzun ve kısa korunma
 
-Korunma stratejisinin **yönünü** belirleyen şey, fiziki (spot) piyasadaki pozisyonumuzdur:
+Korunma stratejisinin **yönünü** belirleyen şey, korunulmak istenen fiyat riskinin yönüdür:
 
-- **Uzun korunma (long hedge)**: Gelecekte bir varlığı *satın alacak* olan tarafın stratejisidir (yakıt alacak havayolu şirketi, buğday alacak un fabrikası, döviz borcunu ödeyecek ithalatçı). Risk, fiyatların **artmasıdır**; vadeli piyasada **uzun pozisyon** (alım) açılır. Fiyatlar artarsa vadeli sözleşmeden elde edilen kâr, artan fiziki alım maliyetini telafi eder.
-- **Kısa korunma (short hedge)**: Gelecekte bir varlığı *satacak* olan ya da varlığı *halihazırda elinde tutan* tarafın stratejisidir (hasat yapacak çiftçi, hisse portföyü tutan yatırımcı, döviz tahsil edecek ihracatçı). Risk, fiyatların **düşmesidir**; vadeli piyasada **kısa pozisyon** (satış) açılır.
+| Spot piyasadaki durum | Maruz kalınan risk | Vadeli piyasadaki pozisyon |
+|---|---|---|
+| Gelecekte **alıcı** olacaksınız | Fiyat **artışı** | **Uzun** korunma (vadeli alım) |
+| Gelecekte **satıcı** olacaksınız | Fiyat **düşüşü** | **Kısa** korunma (vadeli satış) |
 
-Optimal hedge oranı $\beta^*$ pozisyonun **büyüklüğünü**, spot pozisyonun niteliği ise **yönünü** belirler. Slaytlardaki havayolu örneği (uçak yakıtı / kalorifer yakıtı vadeli sözleşmesi) bir *uzun korunma* ve aynı zamanda bir *çapraz korunma* (cross-hedging) örneğiydi. Aşağıda iki örnek daha geliştiriyoruz.
+- **Uzun korunma (long hedge)**: Gelecekte bir varlığı *satın alacak* olan tarafın stratejisidir (yakıt alacak havayolu şirketi, buğday alacak un fabrikası, ham petrol satın alacak rafineri, döviz borcunu ödeyecek ithalatçı). Risk, fiyatların **artmasıdır**; vadeli piyasada **uzun pozisyon** (alım) açılır. Fiyatlar artarsa vadeli sözleşmeden elde edilen kâr, artan fiziki alım maliyetini telafi eder.
+- **Kısa korunma (short hedge)**: Gelecekte bir varlığı *satacak* olan ya da varlığı *halihazırda elinde tutan* tarafın stratejisidir (hasat yapacak çiftçi, petrol üreticisi, hisse portföyü tutan yatırımcı, döviz tahsil edecek ihracatçı). Risk, fiyatların **düşmesidir**; vadeli piyasada **kısa pozisyon** (satış) açılır.
+
+Aynı emtia üzerinde iki farklı yön görülebilir: petrol **üreticisi** (satıcı konumunda) kısa korunma yaparken, ham petrolü girdi olarak kullanan **rafineri** (alıcı konumunda) uzun korunma yapar. Bu nedenle "hedge pozisyonu spot pozisyonun tersidir" şeklindeki yaygın ifade her zaman doğru değildir; doğru ifade şudur: **korunmanın yönü, korunulmak istenen fiyat riskinin yönüne göre belirlenir.** Optimal hedge oranı $\beta^*$ pozisyonun **büyüklüğünü**, fiyat riskinin yönü ise pozisyonun **yönünü** belirler.
+
+Slaytlardaki havayolu örneği (uçak yakıtı / kalorifer yakıtı vadeli sözleşmesi) bir *uzun korunma* ve aynı zamanda bir *çapraz korunma* (cross-hedging) örneğiydi. Aşağıda iki örnek daha geliştiriyoruz.
 
 ## Örnek: Hisse portföyünün endeks vadelisiyle korunması (kısa korunma)
 
