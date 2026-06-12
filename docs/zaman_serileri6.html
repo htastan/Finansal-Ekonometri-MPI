@@ -782,7 +782,9 @@ name: hedge
 ---
 # Çapraz korunma örneği: Yorum ve sözleşme sayısı
 
-- **Yorum**: Şirket spot pozisyonunun tamamını (bire bir) değil, yalnızca **%60&#39;ını** hedge etmelidir. Vadeli piyasa ( `\(\sigma_F=\%40\)` ) spot piyasadan ( `\(\sigma_S=\%30\)` ) daha oynak olduğu için %100 korunma riski azaltmak yerine artırır (**aşırı korunma**, overhedging).
+- **Yorum**: Şirket spot pozisyonunun tamamını (bire bir) değil, yalnızca **%60&#39;ını** hedge etmelidir. Korunmalı portföyün varyansı `\(\beta\)`&#39;nın karesel bir fonksiyonudur ve minimuma `\(\beta^*=0.60\)`&#39;ta ulaşır; `\(\beta^*\)`&#39;dan her sapma varyansı yükseltir. Bire bir korunma ( `\(\beta=1\)` ) burada **aşırı korunmadır** (overhedging).
+
+- Sayısal karşılaştırma: korunmasız varyans `\(\sigma_S^2=0.090\)`; bire bir hedge ile `\(0.058\)`; optimal hedge ile `\(\sigma_S^2(1-\rho^2)=0.032\)`. Yani %100 hedge varyansı korunmasız duruma göre düşürür, ama **gereksiz yere** optimal düzeyin neredeyse iki katında bırakır.
 
 - **Sözleşme sayısı**:
 `$$N=\beta^*\times\frac{\text{spot pozisyon büyüklüğü}}{\text{vadeli sözleşme büyüklüğü}}=0.60\times\frac{1.000.000}{42.000}\approx 14.3$$`
