@@ -585,10 +585,12 @@ Slaytlardaki havayolu örneği (uçak yakıtı / kalorifer yakıtı vadeli sözl
 
 Bir portföy yöneticisi 10.000.000 TL değerinde bir hisse senedi portföyü tutmaktadır ve önümüzdeki aylarda piyasanın düşmesinden endişe etmektedir. Portföyü satıp nakde geçmek yerine (işlem maliyetleri, vergi, likidite nedeniyle) BIST-30 endeks vadeli işlem sözleşmeleriyle **kısa korunma** yapmaya karar verir.
 
-Burada güzel bir bağlantı ortaya çıkar: portföy getirilerinin endeks vadeli getirileri üzerine regresyonundaki eğim katsayısı — yani optimal hedge oranı — aslında portföyün **betasıdır**:
+Burada güzel bir bağlantı ortaya çıkar: portföy getirilerinin endeks vadeli getirileri üzerine regresyonundaki eğim katsayısı — yani optimal hedge oranı — endeks vadeli getirisi piyasa faktörünü temsil ettiğinde portföyün **CAPM betasına** eşittir:
 $$\beta^* = \frac{Cov(r_P, r_F)}{Var(r_F)} = \beta_P$$
 
-Yani CAPM betası ile minimum varyans hedge oranı aynı büyüklüktür. Portföyün betası 1.25 olsun (portföy piyasadan daha hareketli). Endeks vadeli sözleşmesinin nominal değerinin (vadeli fiyat × sözleşme çarpanı) 200.000 TL olduğunu varsayalım. Satılması gereken sözleşme sayısı:
+Eşitliğin koşuluna dikkat ediniz: minimum varyans hedge oranı ile CAPM betası *her zaman* aynı değildir; vadeli sözleşmenin getirisi piyasa endeksinin getirisini (yaklaşık olarak) temsil ettiği için burada çakışırlar. Pratikte vadeli fiyat ile endeks arasındaki baz (basis) küçük sapmalar yaratabilir.
+
+Portföyün betası 1.25 olsun. Endeks vadeli sözleşmesinin nominal değerinin (vadeli fiyat × sözleşme çarpanı) 200.000 TL olduğunu varsayalım. Satılması gereken sözleşme sayısı:
 
 ```{r}
 beta_p <- 1.25          # portföy betası (= optimal hedge oranı)
@@ -599,9 +601,13 @@ N <- beta_p * portfoy / kontrat
 N
 ```
 
-Yönetici yaklaşık **62-63 sözleşme satmalıdır** (kısa pozisyon). Beta 1'den büyük olduğu için sözleşme sayısı, pozisyonun nominal değerinin ima ettiği sayıdan (50) daha fazladır: portföy piyasadan daha oynak olduğu için daha güçlü bir koruma gerekir.
+Beta 1'den büyük olduğu için portföyün **piyasa hareketlerine duyarlılığı** endeksten yüksektir; bu nedenle tam korunma için portföy değerinin ima ettiği sözleşme sayısından (50) daha fazla vadeli sözleşme satılması gerekir. (Betanın oynaklıkla aynı şey olmadığına dikkat ediniz: $\beta_P=\rho\,\sigma_P/\sigma_M$ hem oynaklığı hem de piyasayla birlikte hareket derecesini içerir. Çok oynak ama piyasayla düşük korelasyonlu bir portföyün betası 1'in altında olabilir.)
 
-Koşullu beta bölümünde gördüğümüz gibi beta zamana bağlı olarak değişiyorsa, MGARCH modelinden elde edilen $\beta_{P,t}$ ile sözleşme sayısı her dönem güncellenebilir — bu, dinamik hedge oranının pratikteki karşılığıdır.
+Sözleşmeler tam sayı olduğu için yuvarlama gerekir: **62 sözleşme** hafif eksik korunma (under-hedge), **63 sözleşme** hafif aşırı korunma (over-hedge) anlamına gelir; seçim yöneticinin tercihine bağlıdır.
+
+Koşullu beta bölümünde gördüğümüz gibi beta zamana bağlı olarak değişiyorsa, MGARCH modelinden elde edilen koşullu momentlerle hedge oranı her dönem güncellenebilir:
+$$\beta^*_t=\frac{Cov_t(r_P,r_F)}{Var_t(r_F)}$$
+Finans literatüründeki dinamik korunma (dynamic hedging) çalışmalarının büyük kısmı tam olarak bunu yapar: DCC, BEKK veya diğer MGARCH modelleriyle zamanla değişen koşullu kovaryanslar tahmin edilir ve sözleşme sayısı buna göre ayarlanır.
 
 ## Örnek: İthalatçının kur riski (uzun korunma)
 

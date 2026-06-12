@@ -2014,7 +2014,7 @@ kurulur: önce her seri için tek değişkenli GARCH spesifikasyonu
 ## Hannan-Quinn 7.0627
 ## 
 ## 
-## Elapsed time : 5.593147</code></pre>
+## Elapsed time : 5.468416</code></pre>
 <p>Çıktıda her seriye ait tek değişkenli GARCH parametrelerinin
 (<code>omega</code>, <code>alpha1</code>, <code>beta1</code>) yanı sıra
 ortak DCC parametreleri <code>dcca1</code> ve <code>dccb1</code> yer
@@ -2386,12 +2386,17 @@ vergi, likidite nedeniyle) BIST-30 endeks vadeli işlem sözleşmeleriyle
 <strong>kısa korunma</strong> yapmaya karar verir.</p>
 <p>Burada güzel bir bağlantı ortaya çıkar: portföy getirilerinin endeks
 vadeli getirileri üzerine regresyonundaki eğim katsayısı — yani optimal
-hedge oranı — aslında portföyün <strong>betasıdır</strong>: <span class="math display">\[\beta^* = \frac{Cov(r_P, r_F)}{Var(r_F)} =
+hedge oranı — endeks vadeli getirisi piyasa faktörünü temsil ettiğinde
+portföyün <strong>CAPM betasına</strong> eşittir: <span class="math display">\[\beta^* = \frac{Cov(r_P, r_F)}{Var(r_F)} =
 \beta_P\]</span></p>
-<p>Yani CAPM betası ile minimum varyans hedge oranı aynı büyüklüktür.
-Portföyün betası 1.25 olsun (portföy piyasadan daha hareketli). Endeks
-vadeli sözleşmesinin nominal değerinin (vadeli fiyat × sözleşme çarpanı)
-200.000 TL olduğunu varsayalım. Satılması gereken sözleşme sayısı:</p>
+<p>Eşitliğin koşuluna dikkat ediniz: minimum varyans hedge oranı ile
+CAPM betası <em>her zaman</em> aynı değildir; vadeli sözleşmenin
+getirisi piyasa endeksinin getirisini (yaklaşık olarak) temsil ettiği
+için burada çakışırlar. Pratikte vadeli fiyat ile endeks arasındaki baz
+(basis) küçük sapmalar yaratabilir.</p>
+<p>Portföyün betası 1.25 olsun. Endeks vadeli sözleşmesinin nominal
+değerinin (vadeli fiyat × sözleşme çarpanı) 200.000 TL olduğunu
+varsayalım. Satılması gereken sözleşme sayısı:</p>
 <div class="sourceCode" id="cb54"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" tabindex="-1"></a>beta_p <span class="ot">&lt;-</span> <span class="fl">1.25</span>          <span class="co"># portföy betası (= optimal hedge oranı)</span></span>
 <span id="cb54-2"><a href="#cb54-2" tabindex="-1"></a>portfoy <span class="ot">&lt;-</span> <span class="dv">10000000</span>     <span class="co"># spot pozisyon, TL</span></span>
 <span id="cb54-3"><a href="#cb54-3" tabindex="-1"></a>kontrat <span class="ot">&lt;-</span> <span class="dv">200000</span>       <span class="co"># bir vadeli sözleşmenin nominal değeri, TL</span></span>
@@ -2399,14 +2404,25 @@ vadeli sözleşmesinin nominal değerinin (vadeli fiyat × sözleşme çarpanı)
 <span id="cb54-5"><a href="#cb54-5" tabindex="-1"></a>N <span class="ot">&lt;-</span> beta_p <span class="sc">*</span> portfoy <span class="sc">/</span> kontrat</span>
 <span id="cb54-6"><a href="#cb54-6" tabindex="-1"></a>N</span></code></pre></div>
 <pre><code>## [1] 62.5</code></pre>
-<p>Yönetici yaklaşık <strong>62-63 sözleşme satmalıdır</strong> (kısa
-pozisyon). Beta 1’den büyük olduğu için sözleşme sayısı, pozisyonun
-nominal değerinin ima ettiği sayıdan (50) daha fazladır: portföy
-piyasadan daha oynak olduğu için daha güçlü bir koruma gerekir.</p>
+<p>Beta 1’den büyük olduğu için portföyün <strong>piyasa hareketlerine
+duyarlılığı</strong> endeksten yüksektir; bu nedenle tam korunma için
+portföy değerinin ima ettiği sözleşme sayısından (50) daha fazla vadeli
+sözleşme satılması gerekir. (Betanın oynaklıkla aynı şey olmadığına
+dikkat ediniz: <span class="math inline">\(\beta_P=\rho\,\sigma_P/\sigma_M\)</span> hem
+oynaklığı hem de piyasayla birlikte hareket derecesini içerir. Çok oynak
+ama piyasayla düşük korelasyonlu bir portföyün betası 1’in altında
+olabilir.)</p>
+<p>Sözleşmeler tam sayı olduğu için yuvarlama gerekir: <strong>62
+sözleşme</strong> hafif eksik korunma (under-hedge), <strong>63
+sözleşme</strong> hafif aşırı korunma (over-hedge) anlamına gelir; seçim
+yöneticinin tercihine bağlıdır.</p>
 <p>Koşullu beta bölümünde gördüğümüz gibi beta zamana bağlı olarak
-değişiyorsa, MGARCH modelinden elde edilen <span class="math inline">\(\beta_{P,t}\)</span> ile sözleşme sayısı her dönem
-güncellenebilir — bu, dinamik hedge oranının pratikteki
-karşılığıdır.</p>
+değişiyorsa, MGARCH modelinden elde edilen koşullu momentlerle hedge
+oranı her dönem güncellenebilir: <span class="math display">\[\beta^*_t=\frac{Cov_t(r_P,r_F)}{Var_t(r_F)}\]</span>
+Finans literatüründeki dinamik korunma (dynamic hedging) çalışmalarının
+büyük kısmı tam olarak bunu yapar: DCC, BEKK veya diğer MGARCH
+modelleriyle zamanla değişen koşullu kovaryanslar tahmin edilir ve
+sözleşme sayısı buna göre ayarlanır.</p>
 </div>
 <div id="örnek-ithalatçının-kur-riski-uzun-korunma" class="section level2" number="7.3">
 <h2><span class="header-section-number">7.3</span> Örnek: İthalatçının
