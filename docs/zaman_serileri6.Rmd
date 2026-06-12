@@ -488,16 +488,30 @@ $$\beta^*=\frac{h_{SF}}{h_F}=\frac{\rho\,\sigma_S\sigma_F}{\sigma_F^2}=\rho\,\fr
 ---
 # Çapraz korunma örneği: Yorum ve sözleşme sayısı
 
-- **Yorum**: Şirket spot pozisyonunun tamamını (bire bir) değil, yalnızca **%60'ını** hedge etmelidir. Korunmalı portföyün varyansı $\beta$'nın karesel bir fonksiyonudur ve minimuma $\beta^*=0.60$'ta ulaşır; $\beta^*$'dan her sapma varyansı yükseltir. Bire bir korunma ( $\beta=1$ ) burada **aşırı korunmadır** (overhedging).
-
-- Sayısal karşılaştırma: korunmasız varyans $\sigma_S^2=0.090$; bire bir hedge ile $0.058$; optimal hedge ile $\sigma_S^2(1-\rho^2)=0.032$. Yani %100 hedge varyansı korunmasız duruma göre düşürür, ama **gereksiz yere** optimal düzeyin neredeyse iki katında bırakır.
+- **Yorum**: Şirket spot pozisyonunun tamamını (bire bir) değil, yalnızca **%60'ını** hedge etmelidir. Korunmalı portföyün varyansı $\beta$'nın karesel bir fonksiyonudur ve minimuma $\beta^*=0.60$'ta ulaşır; $\beta^*$'dan her sapma varyansı yükseltir. Bire bir korunma ( $\beta=1$ ) burada **aşırı korunmadır** (overhedging). (Sayısal karşılaştırma izleyen slaytta.)
 
 - **Sözleşme sayısı**:
 $$N=\beta^*\times\frac{\text{spot pozisyon büyüklüğü}}{\text{vadeli sözleşme büyüklüğü}}=0.60\times\frac{1.000.000}{42.000}\approx 14.3$$
 
 - Şirket bugün yaklaşık **14 adet** kalorifer yakıtı vadeli sözleşmesinde **uzun pozisyon** almalıdır. Bu bir **uzun korunma** örneğidir: riske açıklık gelecekte yapılacak bir alım olduğu için koruma vadeli sözleşme alınarak sağlanır (bkz. önceki slayt).
 
-- **MGARCH bağlantısı**: $\sigma_{S}$, $\sigma_{F}$ ve $\rho$ zamana bağlı olarak değişiyorsa optimal oran da değişir: $\beta_t^*=\rho_t\,\sigma_{S,t}/\sigma_{F,t}$. Şirket sözleşme sayısını her dönem güncellemelidir (izleyen slayt).
+- **MGARCH bağlantısı**: $\sigma_{S}$, $\sigma_{F}$ ve $\rho$ zamana bağlı olarak değişiyorsa optimal oran da değişir: $\beta_t^*=\rho_t\,\sigma_{S,t}/\sigma_{F,t}$. Şirket sözleşme sayısını her dönem güncellemelidir.
+
+---
+# Çapraz korunma örneği: Varyans karşılaştırması
+
+- Korunmalı portföyün varyans formülünü hatırlayalım ve örneğin verilerini ( $\sigma_S=0.30$, $\sigma_F=0.40$, $\rho=0.80$ ) yerine koyalım. $h_{SF}=\rho\,\sigma_S\sigma_F=0.096$ olmak üzere:
+$$\sigma_p^2=\underbrace{\sigma_S^2}_{0.09}+\beta^2\underbrace{\sigma_F^2}_{0.16}-2\beta\underbrace{\rho\,\sigma_S\sigma_F}_{0.096}$$
+
+| Strateji | Hesap | $\sigma_p^2$ |
+|---|---|---|
+| Korunmasız ( $\beta=0$ ) | $0.09$ | $0.090$ |
+| Naif hedge ( $\beta=1$ ) | $0.09+0.16-0.192$ | $0.058$ |
+| Optimal hedge ( $\beta^*=0.6$ ) | $0.09+(0.36)(0.16)-(1.2)(0.096)$ | $0.032$ |
+
+- Optimal hedge ile kalan varyans $\sigma_S^2(1-\rho^2)=0.09\times 0.36=0.032$ formülüyle de bulunabilir: korelasyon ne kadar yüksekse artık (residual) risk o kadar küçüktür.
+
+- %100 hedge varyansı korunmasız duruma göre düşürür; ancak **gereksiz yere** optimal düzeyin neredeyse iki katında bırakır.
 
 ---
 # Zamana göre değişen hedge oranı
